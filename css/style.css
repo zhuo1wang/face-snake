@@ -50,8 +50,35 @@ body {
   min-height: 100dvh;
 }
 
+.view[hidden] {
+  display: none !important;
+}
+
+.view-home {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 1;
+  min-height: 0;
+}
+
+.view-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+}
+
 .top {
   display: grid;
+  gap: 12px;
+}
+
+.brand-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 12px;
 }
 
@@ -67,9 +94,71 @@ body {
 .brand h1 {
   margin: 2px 0 0;
   font-family: var(--font-display);
-  font-size: clamp(1.6rem, 5vw, 2rem);
+  font-size: clamp(1.45rem, 5vw, 1.85rem);
   font-weight: 700;
   letter-spacing: 0.02em;
+}
+
+.icon-btn {
+  flex-shrink: 0;
+  padding: 10px 16px;
+}
+
+.settings-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.settings-top h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+}
+
+.settings-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  overflow: auto;
+  padding-bottom: 8px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.settings-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: rgba(26, 50, 40, 0.85);
+  font-size: 0.95rem;
+}
+
+.toggle-row input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--mint);
+}
+
+.overlay-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(220px, 100%);
+}
+
+.overlay-actions .btn {
+  width: 100%;
 }
 
 .scores {
@@ -289,50 +378,11 @@ body {
   gap: 8px;
 }
 
-.dpad {
-  display: none;
-  width: min(220px, 70%);
-  margin: 0 auto;
-  gap: 8px;
-  touch-action: none;
-}
-
-.dpad .pad {
-  width: 64px;
-  height: 64px;
-  margin: 0 auto;
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  background: rgba(26, 50, 40, 0.95);
-  color: var(--cream);
-  font-size: 1.4rem;
-  cursor: pointer;
-  touch-action: none;
-}
-
-.dpad .pad:active {
-  background: var(--mint-dim);
-  color: #062016;
-}
-
-.pad-mid {
-  display: flex;
-  justify-content: space-between;
-  gap: 48px;
-}
-
 .privacy {
   margin: 0;
   text-align: center;
   color: var(--muted);
   font-size: 0.75rem;
-}
-
-/* 触屏设备显示虚拟键 */
-@media (hover: none), (pointer: coarse) {
-  .dpad {
-    display: grid;
-  }
 }
 
 @media (max-width: 480px) {

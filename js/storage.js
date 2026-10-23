@@ -4,6 +4,8 @@ const KEYS = {
   food: "face-snake:foodDataUrl",
   skin: "face-snake:skinId",
   difficulty: "face-snake:difficulty",
+  sound: "face-snake:soundEnabled",
+  foodCount: "face-snake:foodCount",
 };
 
 export function getHighScore() {
@@ -54,4 +56,25 @@ export function getDifficultyId() {
 
 export function setDifficultyId(id) {
   localStorage.setItem(KEYS.difficulty, id || "medium");
+}
+
+export function getSoundEnabled() {
+  const v = localStorage.getItem(KEYS.sound);
+  if (v === null) return true;
+  return v !== "0";
+}
+
+export function setSoundEnabled(on) {
+  localStorage.setItem(KEYS.sound, on ? "1" : "0");
+}
+
+export function getFoodCount() {
+  const n = Number(localStorage.getItem(KEYS.foodCount) || 1);
+  if (n === 2 || n === 3) return n;
+  return 1;
+}
+
+export function setFoodCount(n) {
+  const v = n === 2 || n === 3 ? n : 1;
+  localStorage.setItem(KEYS.foodCount, String(v));
 }

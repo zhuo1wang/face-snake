@@ -24,10 +24,9 @@ const KEY_MAP = {
  * @param {object} opts
  * @param {(dir:{x:number,y:number})=>void} opts.onDirection
  * @param {HTMLElement} opts.swipeTarget
- * @param {HTMLElement} opts.dpad
  * @param {number} [opts.swipeThreshold=24]
  */
-export function createInput({ onDirection, swipeTarget, dpad, swipeThreshold = 24 }) {
+export function createInput({ onDirection, swipeTarget, swipeThreshold = 24 }) {
   let touchStart = null;
 
   function emit(name) {
@@ -67,18 +66,10 @@ export function createInput({ onDirection, swipeTarget, dpad, swipeThreshold = 2
     }
   }
 
-  function onDpadPointer(e) {
-    const btn = e.target.closest("[data-dir]");
-    if (!btn) return;
-    e.preventDefault();
-    emit(btn.dataset.dir);
-  }
-
   window.addEventListener("keydown", onKeyDown);
   swipeTarget.addEventListener("touchstart", onTouchStart, { passive: true });
   swipeTarget.addEventListener("touchmove", onTouchMove, { passive: false });
   swipeTarget.addEventListener("touchend", onTouchEnd, { passive: true });
-  dpad.addEventListener("pointerdown", onDpadPointer);
 
   return {
     destroy() {
@@ -86,7 +77,6 @@ export function createInput({ onDirection, swipeTarget, dpad, swipeThreshold = 2
       swipeTarget.removeEventListener("touchstart", onTouchStart);
       swipeTarget.removeEventListener("touchmove", onTouchMove);
       swipeTarget.removeEventListener("touchend", onTouchEnd);
-      dpad.removeEventListener("pointerdown", onDpadPointer);
     },
   };
 }

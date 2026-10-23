@@ -4,8 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
   <meta name="theme-color" content="#0f1a14" />
-  <meta name="description" content="换脸贪吃蛇 — 上传照片自定义蛇头与食物，电脑手机都能玩" />
-  <title>换脸贪吃蛇 · Face Snake</title>
+  <meta name="description" content="贴图贪吃蛇 — 上传照片自定义蛇头与食物，电脑手机都能玩" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>贴图贪吃蛇 · Sticker Snake</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="assets/icon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet" />
@@ -13,71 +18,112 @@
 </head>
 <body>
   <div class="app">
-    <header class="top">
-      <div class="brand">
-        <p class="brand-mark">Face Snake</p>
-        <h1>换脸贪吃蛇</h1>
-      </div>
-      <div class="scores">
-        <div class="score-pill">
-          <span class="label">得分</span>
-          <strong id="score">0</strong>
+    <!-- 首页：只保留游玩相关 -->
+    <section class="view view-home" id="view-home">
+      <header class="top">
+        <div class="brand-row">
+          <div class="brand">
+            <p class="brand-mark">Sticker Snake</p>
+            <h1>贴图贪吃蛇</h1>
+          </div>
+          <button type="button" class="btn icon-btn" id="btn-open-settings" aria-label="打开设置">设置</button>
         </div>
-        <div class="score-pill">
-          <span class="label">最高</span>
-          <strong id="high-score">0</strong>
+        <div class="scores">
+          <div class="score-pill">
+            <span class="label">得分</span>
+            <strong id="score">0</strong>
+          </div>
+          <div class="score-pill">
+            <span class="label">最高</span>
+            <strong id="high-score">0</strong>
+          </div>
         </div>
-      </div>
-      <div class="avatar-actions">
-        <button type="button" class="btn ghost" id="btn-set-head" title="设置蛇头">
-          <img id="preview-head" class="thumb" alt="" width="36" height="36" />
-          <span>蛇头</span>
-        </button>
-        <button type="button" class="btn ghost" id="btn-set-food" title="设置食物">
-          <img id="preview-food" class="thumb" alt="" width="36" height="36" />
-          <span>食物</span>
-        </button>
-      </div>
-      <div class="option-block">
-        <span class="option-label">皮肤</span>
-        <div class="chip-row" id="skin-row" role="group" aria-label="默认皮肤"></div>
-      </div>
-      <div class="option-block">
-        <span class="option-label">难度</span>
-        <div class="chip-row" id="difficulty-row" role="group" aria-label="难度档位"></div>
-      </div>
-    </header>
+      </header>
 
-    <main class="stage">
-      <div class="canvas-wrap" id="canvas-wrap">
-        <canvas id="game" width="400" height="400" aria-label="贪吃蛇游戏区"></canvas>
-        <div class="overlay" id="overlay">
-          <p class="overlay-title" id="overlay-title">换脸贪吃蛇</p>
-          <p class="overlay-hint" id="overlay-hint">方向键 / WASD 移动 · 手机可滑动或点下方按键</p>
-          <button type="button" class="btn primary" id="btn-overlay-start">开始游戏</button>
+      <main class="stage">
+        <div class="canvas-wrap" id="canvas-wrap">
+          <canvas id="game" width="400" height="400" aria-label="贪吃蛇游戏区"></canvas>
+          <div class="overlay" id="overlay">
+            <p class="overlay-title" id="overlay-title">贴图贪吃蛇</p>
+            <p class="overlay-hint" id="overlay-hint">电脑：方向键 / WASD · 手机：在棋盘上滑动换向</p>
+            <div class="overlay-actions" id="overlay-actions">
+              <button type="button" class="btn primary" id="btn-overlay-start">开始游戏</button>
+              <button type="button" class="btn" id="btn-save-score" hidden>保存图片</button>
+              <button type="button" class="btn" id="btn-share-score" hidden>分享</button>
+            </div>
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
 
-    <footer class="controls">
-      <div class="action-row">
-        <button type="button" class="btn primary" id="btn-start">开始</button>
-        <button type="button" class="btn" id="btn-pause" disabled>暂停</button>
-        <button type="button" class="btn" id="btn-reset">重置</button>
-      </div>
-      <div class="dpad" id="dpad" aria-label="虚拟方向键">
-        <button type="button" class="pad" data-dir="up" aria-label="上">↑</button>
-        <div class="pad-mid">
-          <button type="button" class="pad" data-dir="left" aria-label="左">←</button>
-          <button type="button" class="pad" data-dir="right" aria-label="右">→</button>
+      <footer class="controls">
+        <div class="action-row">
+          <button type="button" class="btn primary" id="btn-start">开始</button>
+          <button type="button" class="btn" id="btn-pause" disabled>暂停</button>
+          <button type="button" class="btn" id="btn-reset">重置</button>
         </div>
-        <button type="button" class="pad" data-dir="down" aria-label="下">↓</button>
+      </footer>
+    </section>
+
+    <!-- 设置页：皮肤 / 难度 / 音效 / PWA 等 -->
+    <section class="view view-settings" id="view-settings" hidden>
+      <header class="settings-top">
+        <button type="button" class="btn" id="btn-back-home">← 返回游戏</button>
+        <h2>设置</h2>
+      </header>
+
+      <div class="settings-scroll">
+        <div class="option-block">
+          <span class="option-label">自定义外观</span>
+          <div class="avatar-actions">
+            <button type="button" class="btn ghost" id="btn-set-head" title="设置蛇头">
+              <img id="preview-head" class="thumb" alt="" width="36" height="36" />
+              <span>蛇头</span>
+            </button>
+            <button type="button" class="btn ghost" id="btn-set-food" title="设置食物">
+              <img id="preview-food" class="thumb" alt="" width="36" height="36" />
+              <span>食物</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="option-block">
+          <span class="option-label">默认皮肤</span>
+          <div class="chip-row" id="skin-row" role="group" aria-label="默认皮肤"></div>
+        </div>
+
+        <div class="option-block">
+          <span class="option-label">难度（默认：中）</span>
+          <div class="chip-row" id="difficulty-row" role="group" aria-label="难度档位"></div>
+        </div>
+
+        <div class="option-block">
+          <span class="option-label">同时食物数（默认：1）</span>
+          <div class="chip-row" id="food-count-row" role="group" aria-label="同时食物数量"></div>
+          <p class="settings-hint">经典为 1 个；选 2 或 3 时场上会同时出现多个食物。</p>
+        </div>
+
+        <div class="option-block">
+          <span class="option-label">音效</span>
+          <label class="toggle-row">
+            <span>游戏音效</span>
+            <input type="checkbox" id="toggle-sound" checked />
+          </label>
+        </div>
+
+        <div class="option-block">
+          <span class="option-label">添加到主屏幕（PWA）</span>
+          <p class="settings-hint" id="pwa-hint">安装后可从桌面图标打开，更像 App。</p>
+          <button type="button" class="btn primary" id="btn-install-pwa" hidden>安装到桌面</button>
+          <p class="settings-hint" id="pwa-ios-hint" hidden>
+            iPhone：用 Safari 打开 → 点底部分享 →「添加到主屏幕」。
+          </p>
+        </div>
+
+        <p class="privacy">图片与设置仅保存在本机浏览器，不会上传服务器</p>
       </div>
-      <p class="privacy">图片仅保存在本机浏览器，不会上传服务器</p>
-    </footer>
+    </section>
   </div>
 
-  <!-- 设置蛇头 / 食物弹层 -->
   <dialog class="modal" id="avatar-modal">
     <form method="dialog" class="modal-card" id="avatar-form">
       <h2 id="modal-title">设置蛇头</h2>

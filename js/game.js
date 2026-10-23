@@ -7,13 +7,16 @@ const GRID = 20;
 export function createGame(canvas, options = {}) {
   const ctx = canvas.getContext("2d");
   const onScore = options.onScore || (() => {});
+  const onEat = options.onEat || (() => {});
   const onGameOver = options.onGameOver || (() => {});
   const onStatus = options.onStatus || (() => {});
 
   /** @type {Cell[]} */
   let snake = [];
-  /** @type {Cell} */
-  let food = { x: 10, y: 10 };
+  /** @type {Cell[]} */
+  let foods = [];
+  /** 同时存在的食物数量，默认 1 */
+  let foodCount = 1;
   /** @type {Cell} */
   let dir = { x: 1, y: 0 };
   /** @type {Cell} */
@@ -49,19 +52,44 @@ export function createGame(canvas, options = {}) {
     pendingDir = { x: 1, y: 0 };
     score = 0;
     dead = false;
-    placeFood();
+    foods = [];
+    ensureFoods();
     onScore(score);
   }
 
-  function placeFood() {
-    const occupied = new Set(snake.map((c) => `${c.x},${c.y}`));
-    const empty = [];
-    for (let y = 0; y < GRID; y++) {
-      for (let x = 0; x < GRID; x++) {
-        if (!occupied.has(`${x},${y}`)) empty.push({ x, y });
+  function cellKey(c) {
+    return `${c.x},${c.y}`;
+  }
+
+  /** 把场上食物补足到 foodCount（不与蛇、已有食物重叠） */
+  function ensureFoods() {
+    const occupied = new Set([
+      ...snake.map(cellKey),
+      ...foods.map(cellKey),
+    ]);
+    while (foods.length < foodCount) {
+      const empty = [];
+      for (let y = 0; y < GRID; y++) {
+        for (let x = 0; x < GRID; x++) {
+          if (!occupied.has(`${x},${y}`)) empty.push({ x, y });
+        }
       }
+      if (!empty.length) break;
+      const spot = empty[Math.floor(Math.random() * empty.length)];
+      foods.push(spot);
+      occupied.add(cellKey(spot));
     }
-    food = empty[Math.floor(Math.random() * empty.length)] || { x: 0, y: 0 };
+  }
+
+  function setFoodCount(n) {
+    const next = Math.min(3, Math.max(1, Math.floor(Number(n) || 1)));
+    foodCount = next;
+    if (foods.length > foodCount) {
+      foods = foods.slice(0, foodCount);
+    } else {
+      ensureFoods();
+    }
+    draw();
   }
 
   function resize() {
@@ -98,10 +126,13 @@ export function createGame(canvas, options = {}) {
     }
 
     snake.unshift(next);
-    if (next.x === food.x && next.y === food.y) {
+    const eatIndex = foods.findIndex((f) => f.x === next.x && f.y === next.y);
+    if (eatIndex >= 0) {
+      foods.splice(eatIndex, 1);
       score += 1;
       onScore(score);
-      placeFood();
+      onEat(score);
+      ensureFoods();
     } else {
       snake.pop();
     }
@@ -174,11 +205,13 @@ export function createGame(canvas, options = {}) {
       drawRoundedCell(snake[i].x, snake[i].y, color);
     }
 
-    // 食物
-    if (foodImg) {
-      drawImageCell(foodImg, food.x, food.y, false);
-    } else {
-      drawRoundedCell(food.x, food.y, "#ff7a59", 0.18);
+    // 食物（可同时多个）
+    for (const f of foods) {
+      if (foodImg) {
+        drawImageCell(foodImg, f.x, f.y, false);
+      } else {
+        drawRoundedCell(f.x, f.y, "#ff7a59", 0.18);
+      }
     }
 
     // 蛇头
@@ -286,6 +319,7 @@ export function createGame(canvas, options = {}) {
     setHeadImage,
     setFoodImage,
     setTickMs,
+    setFoodCount,
     setBodyTheme,
     resize,
     getScore: () => score,
