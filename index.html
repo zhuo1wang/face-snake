@@ -3,127 +3,158 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
-  <meta name="theme-color" content="#0f1a14" />
+  <meta name="theme-color" content="#0a100e" />
   <meta name="description" content="贴图贪吃蛇 — 上传照片自定义蛇头与食物，电脑手机都能玩" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>贴图贪吃蛇 · Sticker Snake</title>
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem("face-snake:theme");
+        document.documentElement.setAttribute("data-theme", t === "light" ? "light" : "dark");
+        if (t === "light") {
+          var m = document.querySelector('meta[name="theme-color"]');
+          if (m) m.setAttribute("content", "#eaf5ee");
+        }
+      } catch (e) {}
+    })();
+  </script>
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
-  <link rel="apple-touch-icon" href="assets/icon.svg" />
+  <link rel="icon" href="assets/mascot.png" type="image/png" />
+  <link rel="apple-touch-icon" href="assets/mascot.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
   <div class="app">
-    <!-- 首页：只保留游玩相关 -->
+
+    <!-- ========== 首页 ========== -->
     <section class="view view-home" id="view-home">
-      <header class="top">
+      <header class="home-header">
         <div class="brand-row">
           <div class="brand">
-            <p class="brand-mark">Sticker Snake</p>
-            <h1>贴图贪吃蛇</h1>
+            <p class="brand-mark">STICKER SNAKE</p>
+            <h1 class="brand-title">贴图贪吃蛇</h1>
           </div>
-          <button type="button" class="btn icon-btn" id="btn-open-settings" aria-label="打开设置">设置</button>
+          <button type="button" class="btn btn-settings" id="btn-open-settings" aria-label="打开设置">⚙ 设置</button>
         </div>
-        <div class="scores">
-          <div class="score-pill">
-            <span class="label">得分</span>
-            <strong id="score">0</strong>
+
+        <div class="score-cards">
+          <div class="info-card info-card--score">
+            <span class="info-label">得分</span>
+            <strong class="info-value" id="score">0</strong>
           </div>
-          <div class="score-pill">
-            <span class="label">最高</span>
-            <strong id="high-score">0</strong>
+          <div class="info-card info-card--best">
+            <span class="info-label">最高分</span>
+            <strong class="info-value" id="high-score">0</strong>
           </div>
         </div>
       </header>
 
       <main class="stage">
-        <div class="canvas-wrap" id="canvas-wrap">
-          <canvas id="game" width="400" height="400" aria-label="贪吃蛇游戏区"></canvas>
-          <div class="overlay" id="overlay">
-            <p class="overlay-title" id="overlay-title">贴图贪吃蛇</p>
-            <p class="overlay-hint" id="overlay-hint">电脑：方向键 / WASD · 手机：在棋盘上滑动换向</p>
-            <div class="overlay-actions" id="overlay-actions">
-              <button type="button" class="btn primary" id="btn-overlay-start">开始游戏</button>
-              <button type="button" class="btn" id="btn-save-score" hidden>保存图片</button>
-              <button type="button" class="btn" id="btn-share-score" hidden>分享</button>
+        <div class="board-card board-card--light">
+          <div class="canvas-wrap" id="canvas-wrap">
+            <canvas id="game" width="400" height="400" aria-label="贪吃蛇游戏区"></canvas>
+            <div class="overlay overlay--home" id="overlay">
+              <img class="overlay-mascot" id="overlay-mascot" src="assets/mascot.png" alt="" width="180" height="180" />
+              <p class="overlay-title" id="overlay-title">贴图贪吃蛇</p>
+              <p class="overlay-hint" id="overlay-hint">方向键 / WASD / 滑动屏幕</p>
+              <div class="overlay-actions" id="overlay-actions">
+                <button type="button" class="btn btn-primary btn-lg btn-glossy" id="btn-overlay-start">开始游戏</button>
+                <button type="button" class="btn btn-ghost" id="btn-save-score" hidden>保存图片</button>
+                <button type="button" class="btn btn-ghost" id="btn-share-score" hidden>分享</button>
+              </div>
             </div>
           </div>
         </div>
       </main>
 
-      <footer class="controls">
+      <footer class="home-footer">
         <div class="action-row">
-          <button type="button" class="btn primary" id="btn-start">开始</button>
-          <button type="button" class="btn" id="btn-pause" disabled>暂停</button>
-          <button type="button" class="btn" id="btn-reset">重置</button>
+          <button type="button" class="btn btn-primary" id="btn-start">开始</button>
+          <button type="button" class="btn btn-secondary" id="btn-pause" disabled>暂停</button>
+          <button type="button" class="btn btn-secondary" id="btn-reset">重置</button>
         </div>
       </footer>
     </section>
 
-    <!-- 设置页：皮肤 / 难度 / 音效 / PWA 等 -->
+    <!-- ========== 设置页 ========== -->
     <section class="view view-settings" id="view-settings" hidden>
-      <header class="settings-top">
-        <button type="button" class="btn" id="btn-back-home">← 返回游戏</button>
-        <h2>设置</h2>
+      <header class="settings-header">
+        <button type="button" class="btn btn-secondary btn-back" id="btn-back-home">← 返回游戏</button>
+        <h2 class="settings-title">设置</h2>
       </header>
 
       <div class="settings-scroll">
-        <div class="option-block">
-          <span class="option-label">自定义外观</span>
+        <!-- ① 自定义外观 -->
+        <section class="panel">
+          <h3 class="panel-title">自定义外观</h3>
           <div class="avatar-actions">
-            <button type="button" class="btn ghost" id="btn-set-head" title="设置蛇头">
-              <img id="preview-head" class="thumb" alt="" width="36" height="36" />
+            <button type="button" class="pick-card" id="btn-set-head" title="设置蛇头">
+              <img id="preview-head" class="thumb" alt="" width="40" height="40" />
               <span>蛇头</span>
             </button>
-            <button type="button" class="btn ghost" id="btn-set-food" title="设置食物">
-              <img id="preview-food" class="thumb" alt="" width="36" height="36" />
+            <button type="button" class="pick-card" id="btn-set-food" title="设置食物">
+              <img id="preview-food" class="thumb" alt="" width="40" height="40" />
               <span>食物</span>
             </button>
           </div>
-        </div>
+        </section>
 
-        <div class="option-block">
-          <span class="option-label">默认皮肤</span>
+        <!-- ② 默认皮肤 -->
+        <section class="panel">
+          <h3 class="panel-title">默认皮肤</h3>
           <div class="chip-row" id="skin-row" role="group" aria-label="默认皮肤"></div>
-        </div>
+        </section>
 
-        <div class="option-block">
-          <span class="option-label">难度（默认：中）</span>
+        <!-- ③ 难度 -->
+        <section class="panel">
+          <h3 class="panel-title">难度选择</h3>
           <div class="chip-row" id="difficulty-row" role="group" aria-label="难度档位"></div>
-        </div>
+        </section>
 
-        <div class="option-block">
-          <span class="option-label">同时食物数（默认：1）</span>
+        <!-- ④ 食物数量 -->
+        <section class="panel">
+          <h3 class="panel-title">同时食物数量</h3>
           <div class="chip-row" id="food-count-row" role="group" aria-label="同时食物数量"></div>
-          <p class="settings-hint">经典为 1 个；选 2 或 3 时场上会同时出现多个食物。</p>
-        </div>
+          <p class="panel-note">经典为 1 个；选 2 或 3 时场上会同时出现多个食物。</p>
+        </section>
 
-        <div class="option-block">
-          <span class="option-label">音效</span>
+        <!-- ⑤ 界面主题 -->
+        <section class="panel">
+          <h3 class="panel-title">界面主题</h3>
+          <div class="chip-row" id="theme-row" role="group" aria-label="界面主题"></div>
+          <p class="panel-note">深色 / 浅色成套切换，避免只改背景导致字看不清。</p>
+        </section>
+
+        <!-- ⑥ 音效 -->
+        <section class="panel">
+          <h3 class="panel-title">音效</h3>
           <label class="toggle-row">
             <span>游戏音效</span>
             <input type="checkbox" id="toggle-sound" checked />
           </label>
-        </div>
+        </section>
 
-        <div class="option-block">
-          <span class="option-label">添加到主屏幕（PWA）</span>
-          <p class="settings-hint" id="pwa-hint">安装后可从桌面图标打开，更像 App。</p>
-          <button type="button" class="btn primary" id="btn-install-pwa" hidden>安装到桌面</button>
-          <p class="settings-hint" id="pwa-ios-hint" hidden>
+        <!-- ⑥ PWA -->
+        <section class="panel panel-quiet">
+          <h3 class="panel-title">添加到主屏幕</h3>
+          <p class="panel-note" id="pwa-hint">安装后可从桌面图标打开，更像 App。</p>
+          <button type="button" class="btn btn-primary" id="btn-install-pwa" hidden>安装到桌面</button>
+          <p class="panel-note" id="pwa-ios-hint" hidden>
             iPhone：用 Safari 打开 → 点底部分享 →「添加到主屏幕」。
           </p>
-        </div>
+        </section>
 
         <p class="privacy">图片与设置仅保存在本机浏览器，不会上传服务器</p>
       </div>
     </section>
   </div>
 
+  <!-- 裁剪弹层（逻辑未改，仅样式） -->
   <dialog class="modal" id="avatar-modal">
     <form method="dialog" class="modal-card" id="avatar-form">
       <h2 id="modal-title">设置蛇头</h2>
@@ -140,8 +171,8 @@
         <input type="file" id="file-input" accept="image/*" hidden />
       </label>
       <div class="modal-actions">
-        <button type="button" class="btn" id="btn-restore-default">恢复默认</button>
-        <button type="button" class="btn primary" id="btn-confirm-avatar">确认使用</button>
+        <button type="button" class="btn btn-secondary" id="btn-restore-default">恢复默认</button>
+        <button type="button" class="btn btn-primary" id="btn-confirm-avatar">确认使用</button>
       </div>
       <button type="button" class="modal-close" id="btn-close-modal" aria-label="关闭">×</button>
     </form>
@@ -149,7 +180,7 @@
 
   <div class="wechat-tip" id="wechat-tip" hidden>
     <p>微信内置浏览器可能兼容不佳，建议点右上角 ··· 选择「在浏览器中打开」</p>
-    <button type="button" class="btn" id="btn-dismiss-wechat">知道了</button>
+    <button type="button" class="btn btn-secondary" id="btn-dismiss-wechat">知道了</button>
   </div>
 
   <script type="module" src="js/main.js"></script>

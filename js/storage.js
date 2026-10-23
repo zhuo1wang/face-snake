@@ -6,6 +6,7 @@ const KEYS = {
   difficulty: "face-snake:difficulty",
   sound: "face-snake:soundEnabled",
   foodCount: "face-snake:foodCount",
+  theme: "face-snake:theme",
 };
 
 export function getHighScore() {
@@ -77,4 +78,13 @@ export function getFoodCount() {
 export function setFoodCount(n) {
   const v = n === 2 || n === 3 ? n : 1;
   localStorage.setItem(KEYS.foodCount, String(v));
+}
+
+export function getThemeId() {
+  const t = localStorage.getItem(KEYS.theme);
+  return t === "light" ? "light" : "dark";
+}
+
+export function setThemeId(id) {
+  localStorage.setItem(KEYS.theme, id === "light" ? "light" : "dark");
 }

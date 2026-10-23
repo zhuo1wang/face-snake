@@ -198,7 +198,8 @@ export const SKINS = {
     name: "经典",
     body: "40, 180, 90",
     bodyEnd: "40, 80, 90",
-    makeHead: () => circleCanvas(drawClassicHead),
+    // 默认蛇头：与开场吉祥物同一张贴纸
+    makeHead: () => "./assets/mascot.png",
     makeFood: () => circleCanvas(drawClassicFood),
   },
   cyber: {

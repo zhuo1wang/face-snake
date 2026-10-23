@@ -13,6 +13,8 @@ import {
   setSoundEnabled as saveSoundEnabled,
   getFoodCount,
   setFoodCount as saveFoodCount,
+  getThemeId,
+  setThemeId as saveThemeId,
 } from "./storage.js";
 import { loadImage, shrinkDataUrlIfNeeded } from "./avatar.js";
 import { createCropEditor, loadImageFromFile } from "./crop.js";
@@ -47,6 +49,7 @@ const els = {
   score: document.getElementById("score"),
   high: document.getElementById("high-score"),
   overlay: document.getElementById("overlay"),
+  overlayMascot: document.getElementById("overlay-mascot"),
   overlayTitle: document.getElementById("overlay-title"),
   overlayHint: document.getElementById("overlay-hint"),
   btnOverlayStart: document.getElementById("btn-overlay-start"),
@@ -62,6 +65,7 @@ const els = {
   skinRow: document.getElementById("skin-row"),
   difficultyRow: document.getElementById("difficulty-row"),
   foodCountRow: document.getElementById("food-count-row"),
+  themeRow: document.getElementById("theme-row"),
   toggleSound: document.getElementById("toggle-sound"),
   btnInstallPwa: document.getElementById("btn-install-pwa"),
   pwaHint: document.getElementById("pwa-hint"),
@@ -85,6 +89,7 @@ const skinThumbs = Object.fromEntries(
 let skinId = getSkin(getSkinId()).id;
 let difficultyId = getDifficulty(getDifficultyId()).id;
 let foodCount = getFoodCount();
+let themeId = getThemeId();
 let currentSkin = getSkin(skinId);
 if (getSkinId() !== skinId) setSkinId(skinId);
 if (getDifficultyId() !== difficultyId) setDifficultyId(difficultyId);
@@ -130,7 +135,7 @@ const game = createGame(els.canvas, {
       showOverlay("已暂停", "点继续或按开始恢复", "继续", false);
       syncButtons("paused");
     } else if (status === "ready") {
-      showOverlay("贴图贪吃蛇", "电脑：方向键 / WASD · 手机：在棋盘上滑动换向", "开始游戏", false);
+      showOverlay("贴图贪吃蛇", "方向键 / WASD / 滑动屏幕", "开始游戏", false);
       syncButtons("ready");
     }
   },
@@ -165,6 +170,14 @@ function applyFoodCount() {
   game.setFoodCount(foodCount);
 }
 
+function applyTheme() {
+  document.documentElement.setAttribute("data-theme", themeId);
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) {
+    meta.setAttribute("content", themeId === "light" ? "#eaf5ee" : "#0a100e");
+  }
+}
+
 function showOverlay(title, hint, btnText, showScoreActions) {
   els.overlay.hidden = false;
   els.overlayTitle.textContent = title;
@@ -173,6 +186,12 @@ function showOverlay(title, hint, btnText, showScoreActions) {
   els.btnSaveScore.hidden = !showScoreActions;
   // 分享按钮：仅在游戏结束且浏览器支持时显示
   els.btnShareScore.hidden = !(showScoreActions && canShareScoreImage());
+  // 贴纸吉祥物 + 浅色开局样式，仅在「开始游戏」引导时使用
+  const isStartGuide = btnText === "开始游戏" && !showScoreActions;
+  els.overlay.classList.toggle("overlay--home", isStartGuide);
+  if (els.overlayMascot) {
+    els.overlayMascot.hidden = !isStartGuide;
+  }
 }
 
 function hideOverlay() {
@@ -350,6 +369,23 @@ function renderFoodCountChips() {
   }
 }
 
+const THEME_OPTIONS = [
+  { id: "dark", name: "深色" },
+  { id: "light", name: "浅色" },
+];
+
+function renderThemeChips() {
+  els.themeRow.innerHTML = "";
+  for (const t of THEME_OPTIONS) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "chip" + (t.id === themeId ? " active" : "");
+    btn.textContent = t.name;
+    btn.addEventListener("click", () => selectTheme(t.id));
+    els.themeRow.appendChild(btn);
+  }
+}
+
 async function selectSkin(id) {
   playClick();
   const skin = getSkin(id);
@@ -380,6 +416,14 @@ function selectFoodCount(n) {
   saveFoodCount(foodCount);
   applyFoodCount();
   renderFoodCountChips();
+}
+
+function selectTheme(id) {
+  playClick();
+  themeId = id === "light" ? "light" : "dark";
+  saveThemeId(themeId);
+  applyTheme();
+  renderThemeChips();
 }
 
 async function openAvatarModal(kind) {
@@ -511,14 +555,16 @@ els.btnDismissWechat.addEventListener("click", () => {
   sessionStorage.setItem("face-snake:wechat-tip", "1");
 });
 
+applyTheme();
 applyBodyTheme();
 applyDifficulty();
 applyFoodCount();
 renderSkinChips();
 renderDifficultyChips();
 renderFoodCountChips();
+renderThemeChips();
 applyAvatars().then(() => {
-  showOverlay("贴图贪吃蛇", "电脑：方向键 / WASD · 手机：在棋盘上滑动换向", "开始游戏", false);
+  showOverlay("贴图贪吃蛇", "方向键 / WASD / 滑动屏幕", "开始游戏", false);
   syncButtons("ready");
 });
 
