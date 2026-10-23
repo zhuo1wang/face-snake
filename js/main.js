@@ -50,14 +50,17 @@ const els = {
   btnDismissWechat: document.getElementById("btn-dismiss-wechat"),
 };
 
-let skinId = getSkinId();
-let difficultyId = getDifficultyId();
-let currentSkin = getSkin(skinId);
-
 /** 缓存皮肤图，避免重复绘制 */
 const skinThumbs = Object.fromEntries(
   SKIN_LIST.map((s) => [s.id, { head: s.makeHead(), food: s.makeFood() }])
 );
+
+// 校正本地存储里可能过期/非法的 id，避免皮肤表取不到而报错
+let skinId = getSkin(getSkinId()).id;
+let difficultyId = getDifficulty(getDifficultyId()).id;
+let currentSkin = getSkin(skinId);
+if (getSkinId() !== skinId) setSkinId(skinId);
+if (getDifficultyId() !== difficultyId) setDifficultyId(difficultyId);
 
 let headDataUrl = getImageDataUrl("head") || skinThumbs[skinId].head;
 let foodDataUrl = getImageDataUrl("food") || skinThumbs[skinId].food;
@@ -200,22 +203,24 @@ function renderDifficultyChips() {
 }
 
 async function selectSkin(id) {
-  skinId = id;
-  currentSkin = getSkin(id);
-  setSkinId(id);
+  const skin = getSkin(id);
+  skinId = skin.id;
+  currentSkin = skin;
+  setSkinId(skinId);
   // 换皮肤：清掉自定义图，套用该皮肤默认头/食物
   setImageDataUrl("head", null);
   setImageDataUrl("food", null);
-  headDataUrl = skinThumbs[id].head;
-  foodDataUrl = skinThumbs[id].food;
+  headDataUrl = skinThumbs[skinId].head;
+  foodDataUrl = skinThumbs[skinId].food;
   applyBodyTheme();
   await applyAvatars();
   renderSkinChips();
 }
 
 function selectDifficulty(id) {
-  difficultyId = id;
-  setDifficultyId(id);
+  const d = getDifficulty(id);
+  difficultyId = d.id;
+  setDifficultyId(difficultyId);
   applyDifficulty();
   renderDifficultyChips();
 }
