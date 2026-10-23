@@ -305,7 +305,7 @@ body {
 
 .modal-card {
   position: relative;
-  width: min(360px, 100%);
+  width: min(400px, 100%);
   margin: auto;
   padding: 24px 20px 20px;
   border-radius: 20px;
@@ -330,21 +330,40 @@ body {
   font-size: 0.9rem;
 }
 
-.preview-ring {
-  width: 168px;
-  height: 168px;
-  border-radius: 50%;
-  padding: 4px;
-  background: conic-gradient(from 120deg, var(--mint), var(--coral), var(--mint));
-  display: grid;
-  place-items: center;
+.crop-stage {
+  width: min(280px, 78vw);
+  aspect-ratio: 1;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: #0a1210;
+  box-shadow: inset 0 0 0 1px rgba(93, 255, 176, 0.08);
 }
 
 #crop-preview {
-  width: 160px;
-  height: 160px;
-  border-radius: 50%;
-  background: #0c1612;
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  touch-action: none;
+}
+
+#crop-preview:active {
+  cursor: grabbing;
+}
+
+.zoom-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.zoom-row input[type="range"] {
+  flex: 1;
+  accent-color: var(--mint);
 }
 
 .file-btn {

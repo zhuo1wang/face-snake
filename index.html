@@ -73,10 +73,14 @@
   <dialog class="modal" id="avatar-modal">
     <form method="dialog" class="modal-card" id="avatar-form">
       <h2 id="modal-title">设置蛇头</h2>
-      <p class="modal-desc">从相册选图，自动居中裁成圆形</p>
-      <div class="preview-ring">
-        <canvas id="crop-preview" width="160" height="160"></canvas>
+      <p class="modal-desc">选图后拖动调整位置，滑块或双指缩放</p>
+      <div class="crop-stage">
+        <canvas id="crop-preview" width="280" height="280" aria-label="裁剪预览，可拖动"></canvas>
       </div>
+      <label class="zoom-row">
+        <span>缩放</span>
+        <input type="range" id="zoom-slider" min="0" max="100" value="0" disabled />
+      </label>
       <label class="file-btn">
         选择图片
         <input type="file" id="file-input" accept="image/*" hidden />

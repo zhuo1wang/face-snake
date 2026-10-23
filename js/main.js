@@ -6,13 +6,8 @@ import {
   getImageDataUrl,
   setImageDataUrl,
 } from "./storage.js";
-import {
-  createDefaultAvatar,
-  processAvatarFile,
-  loadImage,
-  drawPreview,
-  shrinkDataUrlIfNeeded,
-} from "./avatar.js";
+import { createDefaultAvatar, loadImage, shrinkDataUrlIfNeeded } from "./avatar.js";
+import { createCropEditor, loadImageFromFile } from "./crop.js";
 
 const els = {
   canvas: document.getElementById("game"),
@@ -34,6 +29,7 @@ const els = {
   modal: document.getElementById("avatar-modal"),
   modalTitle: document.getElementById("modal-title"),
   cropPreview: document.getElementById("crop-preview"),
+  zoomSlider: document.getElementById("zoom-slider"),
   fileInput: document.getElementById("file-input"),
   btnRestore: document.getElementById("btn-restore-default"),
   btnConfirm: document.getElementById("btn-confirm-avatar"),
@@ -47,10 +43,15 @@ const defaultFood = createDefaultAvatar("food");
 
 let headDataUrl = getImageDataUrl("head") || defaultHead;
 let foodDataUrl = getImageDataUrl("food") || defaultFood;
-let editingKind = "head"; // 'head' | 'food'
-let pendingDataUrl = null;
+let editingKind = "head";
+
+/** 打开弹层时的当前成图；恢复默认时用 */
+let baselineDataUrl = null;
+let wantDefault = false;
 
 els.high.textContent = String(getHighScore());
+
+const cropper = createCropEditor(els.cropPreview, els.zoomSlider);
 
 const game = createGame(els.canvas, {
   onScore(score) {
@@ -126,7 +127,7 @@ function syncButtons(state) {
 
 function startOrResume() {
   if (game.isPaused()) {
-    game.pause(); // toggle off pause
+    game.pause();
     return;
   }
   game.start();
@@ -140,12 +141,20 @@ els.btnReset.addEventListener("click", () => {
   els.score.textContent = "0";
 });
 
-function openAvatarModal(kind) {
+async function openAvatarModal(kind) {
   editingKind = kind;
-  pendingDataUrl = kind === "head" ? headDataUrl : foodDataUrl;
+  wantDefault = false;
+  baselineDataUrl = kind === "head" ? headDataUrl : foodDataUrl;
+  const isDefault =
+    baselineDataUrl === defaultHead || baselineDataUrl === defaultFood;
+
   els.modalTitle.textContent = kind === "head" ? "设置蛇头" : "设置食物";
   els.fileInput.value = "";
-  loadImage(pendingDataUrl).then((img) => drawPreview(els.cropPreview, img));
+
+  const img = await loadImage(baselineDataUrl);
+  // 默认图不可拖；自定义图可继续微调。选新图后可拖可缩放。
+  cropper.setImage(img, { asDefault: isDefault });
+
   if (typeof els.modal.showModal === "function") {
     els.modal.showModal();
   } else {
@@ -161,11 +170,9 @@ els.fileInput.addEventListener("change", async () => {
   const file = els.fileInput.files?.[0];
   if (!file) return;
   try {
-    let dataUrl = await processAvatarFile(file);
-    dataUrl = await shrinkDataUrlIfNeeded(dataUrl);
-    pendingDataUrl = dataUrl;
-    const img = await loadImage(dataUrl);
-    drawPreview(els.cropPreview, img);
+    const img = await loadImageFromFile(file);
+    wantDefault = false;
+    cropper.setImage(img, { asDefault: false });
   } catch (err) {
     alert("图片处理失败，请换一张再试");
     console.error(err);
@@ -173,40 +180,47 @@ els.fileInput.addEventListener("change", async () => {
 });
 
 els.btnRestore.addEventListener("click", async () => {
-  pendingDataUrl = editingKind === "head" ? defaultHead : defaultFood;
-  const img = await loadImage(pendingDataUrl);
-  drawPreview(els.cropPreview, img);
+  wantDefault = true;
+  const data = editingKind === "head" ? defaultHead : defaultFood;
+  const img = await loadImage(data);
+  cropper.setImage(img, { asDefault: true });
 });
 
 els.btnConfirm.addEventListener("click", async (e) => {
   e.preventDefault();
-  const isDefault =
-    (editingKind === "head" && pendingDataUrl === defaultHead) ||
-    (editingKind === "food" && pendingDataUrl === defaultFood);
 
-  if (isDefault) {
+  let nextUrl;
+  if (wantDefault || cropper.isUsingDefault()) {
+    nextUrl = editingKind === "head" ? defaultHead : defaultFood;
     setImageDataUrl(editingKind, null);
   } else {
-    const ok = setImageDataUrl(editingKind, pendingDataUrl);
-    if (!ok) {
-      alert("保存失败：图片可能太大。请换一张较小的图片。");
-      return;
+    let dataUrl = cropper.exportDataUrl();
+    if (!dataUrl) {
+      // 未改动：沿用当前
+      nextUrl = baselineDataUrl;
+    } else {
+      dataUrl = await shrinkDataUrlIfNeeded(dataUrl);
+      const ok = setImageDataUrl(editingKind, dataUrl);
+      if (!ok) {
+        alert("保存失败：图片可能太大。请缩小后再试。");
+        return;
+      }
+      nextUrl = dataUrl;
     }
   }
 
   if (editingKind === "head") {
-    headDataUrl = pendingDataUrl;
+    headDataUrl = nextUrl;
     els.previewHead.src = headDataUrl;
     await game.setHeadImage(headDataUrl);
   } else {
-    foodDataUrl = pendingDataUrl;
+    foodDataUrl = nextUrl;
     els.previewFood.src = foodDataUrl;
     await game.setFoodImage(foodDataUrl);
   }
   els.modal.close();
 });
 
-// 微信内置浏览器提示
 function isWeChat() {
   return /MicroMessenger/i.test(navigator.userAgent);
 }
@@ -218,7 +232,6 @@ els.btnDismissWechat.addEventListener("click", () => {
   sessionStorage.setItem("face-snake:wechat-tip", "1");
 });
 
-// 初始
 applyAvatars().then(() => {
   showOverlay("换脸贪吃蛇", "方向键 / WASD · 手机滑动或点下方按键", "开始游戏");
   syncButtons("ready");
