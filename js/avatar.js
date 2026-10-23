@@ -1,65 +1,12 @@
 /**
- * 上传图片 → 居中裁方 → 裁圆 → 压缩为 DataURL
+ * 头像工具：加载、压缩；默认图见 skins.js
  */
 
+import { createDefaultAvatar } from "./skins.js";
+
+export { createDefaultAvatar };
+
 const MAX_EDGE = 256;
-
-/** 生成默认蛇头 / 食物（矢量绘制，无需外部 png） */
-export function createDefaultAvatar(kind) {
-  const size = 128;
-  const canvas = document.createElement("canvas");
-  canvas.width = size;
-  canvas.height = size;
-  const ctx = canvas.getContext("2d");
-
-  ctx.clearRect(0, 0, size, size);
-  ctx.beginPath();
-  ctx.arc(size / 2, size / 2, size / 2 - 2, 0, Math.PI * 2);
-  ctx.closePath();
-  ctx.clip();
-
-  if (kind === "head") {
-    const g = ctx.createLinearGradient(0, 0, size, size);
-    g.addColorStop(0, "#5dffb0");
-    g.addColorStop(1, "#1f9e63");
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, size, size);
-
-    // 眼睛
-    ctx.fillStyle = "#062016";
-    ctx.beginPath();
-    ctx.arc(size * 0.38, size * 0.42, size * 0.08, 0, Math.PI * 2);
-    ctx.arc(size * 0.62, size * 0.42, size * 0.08, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#fff";
-    ctx.beginPath();
-    ctx.arc(size * 0.4, size * 0.4, size * 0.03, 0, Math.PI * 2);
-    ctx.arc(size * 0.64, size * 0.4, size * 0.03, 0, Math.PI * 2);
-    ctx.fill();
-
-    // 微笑
-    ctx.strokeStyle = "#062016";
-    ctx.lineWidth = 4;
-    ctx.lineCap = "round";
-    ctx.beginPath();
-    ctx.arc(size / 2, size * 0.52, size * 0.22, 0.15 * Math.PI, 0.85 * Math.PI);
-    ctx.stroke();
-  } else {
-    const g = ctx.createRadialGradient(size * 0.4, size * 0.35, 8, size / 2, size / 2, size / 2);
-    g.addColorStop(0, "#ffb199");
-    g.addColorStop(1, "#ff7a59");
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, size, size);
-
-    // 高光
-    ctx.fillStyle = "rgba(255,255,255,0.35)";
-    ctx.beginPath();
-    ctx.ellipse(size * 0.38, size * 0.34, size * 0.16, size * 0.1, -0.4, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  return canvas.toDataURL("image/png");
-}
 
 export function loadImage(src) {
   return new Promise((resolve, reject) => {

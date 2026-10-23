@@ -5,9 +5,19 @@ import {
   setHighScore,
   getImageDataUrl,
   setImageDataUrl,
+  getSkinId,
+  setSkinId,
+  getDifficultyId,
+  setDifficultyId,
 } from "./storage.js";
-import { createDefaultAvatar, loadImage, shrinkDataUrlIfNeeded } from "./avatar.js";
+import { loadImage, shrinkDataUrlIfNeeded } from "./avatar.js";
 import { createCropEditor, loadImageFromFile } from "./crop.js";
+import {
+  SKIN_LIST,
+  getSkin,
+  DIFFICULTY_LIST,
+  getDifficulty,
+} from "./skins.js";
 
 const els = {
   canvas: document.getElementById("game"),
@@ -25,6 +35,8 @@ const els = {
   btnSetFood: document.getElementById("btn-set-food"),
   previewHead: document.getElementById("preview-head"),
   previewFood: document.getElementById("preview-food"),
+  skinRow: document.getElementById("skin-row"),
+  difficultyRow: document.getElementById("difficulty-row"),
   dpad: document.getElementById("dpad"),
   modal: document.getElementById("avatar-modal"),
   modalTitle: document.getElementById("modal-title"),
@@ -38,14 +50,18 @@ const els = {
   btnDismissWechat: document.getElementById("btn-dismiss-wechat"),
 };
 
-const defaultHead = createDefaultAvatar("head");
-const defaultFood = createDefaultAvatar("food");
+let skinId = getSkinId();
+let difficultyId = getDifficultyId();
+let currentSkin = getSkin(skinId);
 
-let headDataUrl = getImageDataUrl("head") || defaultHead;
-let foodDataUrl = getImageDataUrl("food") || defaultFood;
+/** 缓存皮肤图，避免重复绘制 */
+const skinThumbs = Object.fromEntries(
+  SKIN_LIST.map((s) => [s.id, { head: s.makeHead(), food: s.makeFood() }])
+);
+
+let headDataUrl = getImageDataUrl("head") || skinThumbs[skinId].head;
+let foodDataUrl = getImageDataUrl("food") || skinThumbs[skinId].food;
 let editingKind = "head";
-
-/** 打开弹层时的当前成图；恢复默认时用 */
 let baselineDataUrl = null;
 let wantDefault = false;
 
@@ -85,11 +101,25 @@ createInput({
   dpad: els.dpad,
 });
 
+function skinDefault(kind) {
+  const pack = skinThumbs[currentSkin.id] || skinThumbs.classic;
+  return kind === "head" ? pack.head : pack.food;
+}
+
 async function applyAvatars() {
   els.previewHead.src = headDataUrl;
   els.previewFood.src = foodDataUrl;
   await game.setHeadImage(headDataUrl);
   await game.setFoodImage(foodDataUrl);
+}
+
+function applyBodyTheme() {
+  game.setBodyTheme(currentSkin.body, currentSkin.bodyEnd);
+}
+
+function applyDifficulty() {
+  const d = getDifficulty(difficultyId);
+  game.setTickMs(d.tickMs);
 }
 
 function showOverlay(title, hint, btnText) {
@@ -141,18 +171,66 @@ els.btnReset.addEventListener("click", () => {
   els.score.textContent = "0";
 });
 
+/** —— 皮肤 / 难度 UI —— */
+function renderSkinChips() {
+  els.skinRow.innerHTML = "";
+  for (const skin of SKIN_LIST) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "chip" + (skin.id === skinId ? " active" : "");
+    btn.dataset.skin = skin.id;
+    const preview = skinThumbs[skin.id].head;
+    btn.innerHTML = `<span class="dot" style="background-image:url('${preview}')"></span>${skin.name}`;
+    btn.addEventListener("click", () => selectSkin(skin.id));
+    els.skinRow.appendChild(btn);
+  }
+}
+
+function renderDifficultyChips() {
+  els.difficultyRow.innerHTML = "";
+  for (const d of DIFFICULTY_LIST) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "chip" + (d.id === difficultyId ? " active" : "");
+    btn.dataset.difficulty = d.id;
+    btn.textContent = d.name;
+    btn.addEventListener("click", () => selectDifficulty(d.id));
+    els.difficultyRow.appendChild(btn);
+  }
+}
+
+async function selectSkin(id) {
+  skinId = id;
+  currentSkin = getSkin(id);
+  setSkinId(id);
+  // 换皮肤：清掉自定义图，套用该皮肤默认头/食物
+  setImageDataUrl("head", null);
+  setImageDataUrl("food", null);
+  headDataUrl = skinThumbs[id].head;
+  foodDataUrl = skinThumbs[id].food;
+  applyBodyTheme();
+  await applyAvatars();
+  renderSkinChips();
+}
+
+function selectDifficulty(id) {
+  difficultyId = id;
+  setDifficultyId(id);
+  applyDifficulty();
+  renderDifficultyChips();
+}
+
 async function openAvatarModal(kind) {
   editingKind = kind;
   wantDefault = false;
   baselineDataUrl = kind === "head" ? headDataUrl : foodDataUrl;
-  const isDefault =
-    baselineDataUrl === defaultHead || baselineDataUrl === defaultFood;
+  // 没有自定义上传时，当前是皮肤默认图
+  const isDefault = !getImageDataUrl(kind);
 
   els.modalTitle.textContent = kind === "head" ? "设置蛇头" : "设置食物";
   els.fileInput.value = "";
 
   const img = await loadImage(baselineDataUrl);
-  // 默认图不可拖；自定义图可继续微调。选新图后可拖可缩放。
   cropper.setImage(img, { asDefault: isDefault });
 
   if (typeof els.modal.showModal === "function") {
@@ -181,7 +259,7 @@ els.fileInput.addEventListener("change", async () => {
 
 els.btnRestore.addEventListener("click", async () => {
   wantDefault = true;
-  const data = editingKind === "head" ? defaultHead : defaultFood;
+  const data = skinDefault(editingKind);
   const img = await loadImage(data);
   cropper.setImage(img, { asDefault: true });
 });
@@ -191,12 +269,11 @@ els.btnConfirm.addEventListener("click", async (e) => {
 
   let nextUrl;
   if (wantDefault || cropper.isUsingDefault()) {
-    nextUrl = editingKind === "head" ? defaultHead : defaultFood;
+    nextUrl = skinDefault(editingKind);
     setImageDataUrl(editingKind, null);
   } else {
     let dataUrl = cropper.exportDataUrl();
     if (!dataUrl) {
-      // 未改动：沿用当前
       nextUrl = baselineDataUrl;
     } else {
       dataUrl = await shrinkDataUrlIfNeeded(dataUrl);
@@ -232,6 +309,11 @@ els.btnDismissWechat.addEventListener("click", () => {
   sessionStorage.setItem("face-snake:wechat-tip", "1");
 });
 
+// 初始化
+applyBodyTheme();
+applyDifficulty();
+renderSkinChips();
+renderDifficultyChips();
 applyAvatars().then(() => {
   showOverlay("换脸贪吃蛇", "方向键 / WASD · 手机滑动或点下方按键", "开始游戏");
   syncButtons("ready");

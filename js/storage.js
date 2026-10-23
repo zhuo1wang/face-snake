@@ -2,6 +2,8 @@ const KEYS = {
   highScore: "face-snake:highScore",
   head: "face-snake:headDataUrl",
   food: "face-snake:foodDataUrl",
+  skin: "face-snake:skinId",
+  difficulty: "face-snake:difficulty",
 };
 
 export function getHighScore() {
@@ -36,4 +38,20 @@ export function setImageDataUrl(kind, dataUrl) {
     console.warn("localStorage 写入失败（可能超额）", err);
     return false;
   }
+}
+
+export function getSkinId() {
+  return localStorage.getItem(KEYS.skin) || "classic";
+}
+
+export function setSkinId(id) {
+  localStorage.setItem(KEYS.skin, id || "classic");
+}
+
+export function getDifficultyId() {
+  return localStorage.getItem(KEYS.difficulty) || "medium";
+}
+
+export function setDifficultyId(id) {
+  localStorage.setItem(KEYS.difficulty, id || "medium");
 }

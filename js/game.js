@@ -1,5 +1,4 @@
 const GRID = 20;
-const TICK_MS = 120;
 
 /**
  * @typedef {{x:number,y:number}} Cell
@@ -26,6 +25,9 @@ export function createGame(canvas, options = {}) {
   let acc = 0;
   let lastTs = 0;
   let raf = 0;
+  let tickMs = 120;
+  let bodyRgb = "40, 180, 90";
+  let bodyEndRgb = "40, 80, 90";
 
   /** @type {HTMLImageElement|null} */
   let headImg = null;
@@ -165,11 +167,11 @@ export function createGame(canvas, options = {}) {
   function draw() {
     drawGrid();
 
-    // 蛇身
+    // 蛇身（颜色随皮肤）
     for (let i = snake.length - 1; i >= 1; i--) {
-      const t = i / snake.length;
-      const g = Math.floor(80 + (1 - t) * 100);
-      drawRoundedCell(snake[i].x, snake[i].y, `rgb(40, ${g}, 90)`);
+      const t = i / Math.max(snake.length - 1, 1);
+      const color = lerpRgb(bodyRgb, bodyEndRgb, t);
+      drawRoundedCell(snake[i].x, snake[i].y, color);
     }
 
     // 食物
@@ -199,11 +201,21 @@ export function createGame(canvas, options = {}) {
     if (!lastTs) lastTs = ts;
     acc += ts - lastTs;
     lastTs = ts;
-    while (acc >= TICK_MS) {
-      acc -= TICK_MS;
+    while (acc >= tickMs) {
+      acc -= tickMs;
       tick();
       if (dead) break;
     }
+    draw();
+  }
+
+  function setTickMs(ms) {
+    tickMs = Math.max(40, Number(ms) || 120);
+  }
+
+  function setBodyTheme(startRgb, endRgb) {
+    bodyRgb = startRgb || bodyRgb;
+    bodyEndRgb = endRgb || bodyEndRgb;
     draw();
   }
 
@@ -273,6 +285,8 @@ export function createGame(canvas, options = {}) {
     setDirection,
     setHeadImage,
     setFoodImage,
+    setTickMs,
+    setBodyTheme,
     resize,
     getScore: () => score,
     isRunning: () => running && !paused && !dead,
@@ -283,6 +297,15 @@ export function createGame(canvas, options = {}) {
       window.removeEventListener("resize", resize);
     },
   };
+}
+
+function lerpRgb(a, b, t) {
+  const pa = a.split(",").map((n) => Number(n.trim()));
+  const pb = b.split(",").map((n) => Number(n.trim()));
+  const r = Math.round(pa[0] + (pb[0] - pa[0]) * t);
+  const g = Math.round(pa[1] + (pb[1] - pa[1]) * t);
+  const bl = Math.round(pa[2] + (pb[2] - pa[2]) * t);
+  return `rgb(${r}, ${g}, ${bl})`;
 }
 
 function roundRect(ctx, x, y, w, h, r) {

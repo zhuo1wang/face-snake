@@ -105,6 +105,62 @@ body {
   gap: 10px;
 }
 
+.option-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.option-label {
+  font-size: 0.8rem;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  appearance: none;
+  border: 1px solid var(--line);
+  background: rgba(26, 50, 40, 0.9);
+  color: var(--cream);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border-radius: 999px;
+  padding: 8px 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+
+.chip:hover {
+  border-color: var(--mint-dim);
+}
+
+.chip.active {
+  background: linear-gradient(135deg, rgba(61, 214, 140, 0.35), rgba(31, 158, 99, 0.35));
+  border-color: var(--mint);
+  color: #e8fff4;
+  box-shadow: 0 0 0 1px rgba(93, 255, 176, 0.2);
+}
+
+.chip .dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background-size: cover;
+  background-position: center;
+  flex-shrink: 0;
+}
+
 .btn {
   appearance: none;
   border: 1px solid var(--line);
