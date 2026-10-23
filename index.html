@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#0f1a14" />
+  <meta name="description" content="换脸贪吃蛇 — 上传照片自定义蛇头与食物，电脑手机都能玩" />
+  <title>换脸贪吃蛇 · Face Snake</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="top">
+      <div class="brand">
+        <p class="brand-mark">Face Snake</p>
+        <h1>换脸贪吃蛇</h1>
+      </div>
+      <div class="scores">
+        <div class="score-pill">
+          <span class="label">得分</span>
+          <strong id="score">0</strong>
+        </div>
+        <div class="score-pill">
+          <span class="label">最高</span>
+          <strong id="high-score">0</strong>
+        </div>
+      </div>
+      <div class="avatar-actions">
+        <button type="button" class="btn ghost" id="btn-set-head" title="设置蛇头">
+          <img id="preview-head" class="thumb" alt="" width="36" height="36" />
+          <span>蛇头</span>
+        </button>
+        <button type="button" class="btn ghost" id="btn-set-food" title="设置食物">
+          <img id="preview-food" class="thumb" alt="" width="36" height="36" />
+          <span>食物</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="stage">
+      <div class="canvas-wrap" id="canvas-wrap">
+        <canvas id="game" width="400" height="400" aria-label="贪吃蛇游戏区"></canvas>
+        <div class="overlay" id="overlay">
+          <p class="overlay-title" id="overlay-title">换脸贪吃蛇</p>
+          <p class="overlay-hint" id="overlay-hint">方向键 / WASD 移动 · 手机可滑动或点下方按键</p>
+          <button type="button" class="btn primary" id="btn-overlay-start">开始游戏</button>
+        </div>
+      </div>
+    </main>
+
+    <footer class="controls">
+      <div class="action-row">
+        <button type="button" class="btn primary" id="btn-start">开始</button>
+        <button type="button" class="btn" id="btn-pause" disabled>暂停</button>
+        <button type="button" class="btn" id="btn-reset">重置</button>
+      </div>
+      <div class="dpad" id="dpad" aria-label="虚拟方向键">
+        <button type="button" class="pad" data-dir="up" aria-label="上">↑</button>
+        <div class="pad-mid">
+          <button type="button" class="pad" data-dir="left" aria-label="左">←</button>
+          <button type="button" class="pad" data-dir="right" aria-label="右">→</button>
+        </div>
+        <button type="button" class="pad" data-dir="down" aria-label="下">↓</button>
+      </div>
+      <p class="privacy">图片仅保存在本机浏览器，不会上传服务器</p>
+    </footer>
+  </div>
+
+  <!-- 设置蛇头 / 食物弹层 -->
+  <dialog class="modal" id="avatar-modal">
+    <form method="dialog" class="modal-card" id="avatar-form">
+      <h2 id="modal-title">设置蛇头</h2>
+      <p class="modal-desc">从相册选图，自动居中裁成圆形</p>
+      <div class="preview-ring">
+        <canvas id="crop-preview" width="160" height="160"></canvas>
+      </div>
+      <label class="file-btn">
+        选择图片
+        <input type="file" id="file-input" accept="image/*" hidden />
+      </label>
+      <div class="modal-actions">
+        <button type="button" class="btn" id="btn-restore-default">恢复默认</button>
+        <button type="button" class="btn primary" id="btn-confirm-avatar">确认使用</button>
+      </div>
+      <button type="button" class="modal-close" id="btn-close-modal" aria-label="关闭">×</button>
+    </form>
+  </dialog>
+
+  <div class="wechat-tip" id="wechat-tip" hidden>
+    <p>微信内置浏览器可能兼容不佳，建议点右上角 ··· 选择「在浏览器中打开」</p>
+    <button type="button" class="btn" id="btn-dismiss-wechat">知道了</button>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
