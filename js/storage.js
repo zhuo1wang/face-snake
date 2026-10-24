@@ -2,6 +2,7 @@ const KEYS = {
   highScore: "face-snake:highScore",
   highScoreTimed: "face-snake:highScoreTimed",
   mode: "face-snake:mode",
+  mapSelect: "face-snake:mapSelect",
   head: "face-snake:headDataUrl",
   food: "face-snake:foodDataUrl",
   skin: "face-snake:skinId",
@@ -48,6 +49,51 @@ export function getModeId() {
 
 export function setModeId(id) {
   localStorage.setItem(KEYS.mode, id === "timed" ? "timed" : "classic");
+}
+
+/** @returns {'empty'|'random'} 默认空板；random=每局从障碍图池抽取 */
+export function getMapSelectId() {
+  return localStorage.getItem(KEYS.mapSelect) === "random" ? "random" : "empty";
+}
+
+export function setMapSelectId(id) {
+  localStorage.setItem(KEYS.mapSelect, id === "random" ? "random" : "empty");
+}
+
+function mapScoreKey(modeId, mapId) {
+  return `face-snake:high:${modeId === "timed" ? "timed" : "classic"}:${mapId || "empty"}`;
+}
+
+/** 分地图 + 分模式记最高分；空板兼容旧 key */
+export function getMapHighScore(modeId, mapId) {
+  const mode = modeId === "timed" ? "timed" : "classic";
+  const map = mapId || "empty";
+  const keyed = readScore(mapScoreKey(mode, map));
+  if (keyed > 0) return keyed;
+  if (map === "empty") {
+    return mode === "timed" ? getTimedHighScore() : getHighScore();
+  }
+  return 0;
+}
+
+export function setMapHighScore(modeId, mapId, score) {
+  const mode = modeId === "timed" ? "timed" : "classic";
+  const map = mapId || "empty";
+  const key = mapScoreKey(mode, map);
+  const legacy =
+    map === "empty"
+      ? mode === "timed"
+        ? getTimedHighScore()
+        : getHighScore()
+      : 0;
+  const prev = Math.max(readScore(key), legacy);
+  const next = writeScoreIfBest(key, score, prev);
+  // 空板同步旧 key，避免老版页面读不到
+  if (map === "empty") {
+    if (mode === "timed") setTimedHighScore(score);
+    else setHighScore(score);
+  }
+  return next;
 }
 
 export function getImageDataUrl(kind) {

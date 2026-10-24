@@ -1,12 +1,12 @@
 import { createGame } from "./game.js";
 import { createInput } from "./input.js";
 import {
-  getHighScore,
-  setHighScore,
-  getTimedHighScore,
-  setTimedHighScore,
   getModeId,
   setModeId as saveModeId,
+  getMapSelectId,
+  setMapSelectId as saveMapSelectId,
+  getMapHighScore,
+  setMapHighScore,
   getImageDataUrl,
   setImageDataUrl,
   getSkinId,
@@ -28,6 +28,11 @@ import {
   DIFFICULTY_LIST,
   getDifficulty,
 } from "./skins.js";
+import {
+  getMap,
+  pickRandomObstacleMap,
+  MAP_EMPTY,
+} from "./maps.js";
 import {
   setSoundEnabled,
   unlockAudio,
@@ -57,6 +62,7 @@ const els = {
   timerCard: document.getElementById("timer-card"),
   timer: document.getElementById("timer"),
   modeRow: document.getElementById("mode-row"),
+  mapRow: document.getElementById("map-row"),
   overlay: document.getElementById("overlay"),
   overlayMascot: document.getElementById("overlay-mascot"),
   overlayTitle: document.getElementById("overlay-title"),
@@ -100,12 +106,18 @@ const MODE_OPTIONS = [
   { id: "classic", name: "经典无尽" },
   { id: "timed", name: "限时 60 秒" },
 ];
+const MAP_SELECT_OPTIONS = [
+  { id: "empty", name: "空板" },
+  { id: "random", name: "每局随机" },
+];
 
 let skinId = getSkin(getSkinId()).id;
 let difficultyId = getDifficulty(getDifficultyId()).id;
 let foodCount = getFoodCount();
 let themeId = getThemeId();
 let modeId = getModeId();
+let mapSelectId = getMapSelectId();
+let activeMap = MAP_EMPTY;
 let currentSkin = getSkin(skinId);
 if (getSkinId() !== skinId) setSkinId(skinId);
 if (getDifficultyId() !== difficultyId) setDifficultyId(difficultyId);
@@ -129,15 +141,27 @@ function isTimedMode() {
 }
 
 function readModeHigh() {
-  return isTimedMode() ? getTimedHighScore() : getHighScore();
+  return getMapHighScore(modeId, activeMap.id);
 }
 
 function writeModeHigh(score) {
-  return isTimedMode() ? setTimedHighScore(score) : setHighScore(score);
+  return setMapHighScore(modeId, activeMap.id, score);
 }
 
 function modeLabel() {
   return isTimedMode() ? "限时 60 秒" : "经典无尽";
+}
+
+function mapLabel() {
+  return activeMap?.name || "空板";
+}
+
+/** 准备本局地图：空板固定；随机则从障碍池抽取 */
+function prepareRoundMap() {
+  activeMap =
+    mapSelectId === "random" ? pickRandomObstacleMap() : getMap("empty");
+  game.setMap(activeMap);
+  refreshHighScoreUi();
 }
 
 function formatTime(ms) {
@@ -155,7 +179,13 @@ function updateTimerDisplay(ms) {
 
 function refreshHighScoreUi() {
   if (els.highLabel) {
-    els.highLabel.textContent = isTimedMode() ? "限时最高" : "最高分";
+    if (isTimedMode()) {
+      els.highLabel.textContent =
+        activeMap.id === "empty" ? "限时最高" : `${activeMap.name}·限时`;
+    } else {
+      els.highLabel.textContent =
+        activeMap.id === "empty" ? "最高分" : `${activeMap.name}最高`;
+    }
   }
   els.high.textContent = String(readModeHigh());
 }
@@ -186,24 +216,25 @@ const game = createGame(els.canvas, {
     else playStart();
     const high = writeModeHigh(score);
     els.high.textContent = String(high);
+    const mapBit = activeMap.id === "empty" ? "" : ` · ${activeMap.name}`;
     if (reason === "time") {
       showOverlay(
         "时间到",
-        `60 秒得分 ${score} · 限时最高 ${high}`,
+        `60 秒得分 ${score}${mapBit} · 最高 ${high}`,
         "再来一局",
         true
       );
     } else if (isTimedMode()) {
       showOverlay(
         "游戏结束",
-        `本局得分 ${score} · 限时最高 ${high}`,
+        `本局得分 ${score}${mapBit} · 最高 ${high}`,
         "再来一局",
         true
       );
     } else {
       showOverlay(
         "游戏结束",
-        `本局得分 ${score} · 最高 ${high}`,
+        `本局得分 ${score}${mapBit} · 最高 ${high}`,
         "再来一局",
         true
       );
@@ -218,14 +249,22 @@ const game = createGame(els.canvas, {
       showOverlay("已暂停", "点继续或按开始恢复", "继续", false);
       syncButtons("paused");
     } else if (status === "ready") {
-      const hint = isTimedMode()
-        ? "限时 60 秒冲高分 · 撞死也保留分数"
-        : "方向键 / WASD / 滑动屏幕";
-      showOverlay("贴图贪吃蛇", hint, "开始游戏", false);
+      showOverlay("贴图贪吃蛇", readyHint(), "开始游戏", false);
       syncButtons("ready");
     }
   },
 });
+
+function readyHint() {
+  const parts = [];
+  if (isTimedMode()) parts.push("限时 60 秒");
+  if (mapSelectId === "random") parts.push(`本局地图：${mapLabel()}`);
+  else if (!isTimedMode()) parts.push("方向键 / WASD / 滑动屏幕");
+  if (isTimedMode() && mapSelectId === "empty") {
+    parts.push("撞死也保留分数");
+  }
+  return parts.join(" · ") || "方向键 / WASD / 滑动屏幕";
+}
 
 createInput({
   onDirection: (dir) => game.setDirection(dir),
@@ -313,6 +352,7 @@ async function buildScoreCanvas() {
     difficultyName: getDifficulty(difficultyId).name,
     skinName: currentSkin.name,
     modeName: modeLabel(),
+    mapName: mapLabel(),
     headDataUrl,
   });
 }
@@ -343,6 +383,10 @@ function startOrResume() {
   if (game.isPaused()) {
     game.pause();
     return;
+  }
+  // 死后开新局：随机模式下重新抽地图
+  if (game.isDead()) {
+    prepareRoundMap();
   }
   playStart();
   game.start();
@@ -377,6 +421,7 @@ els.btnPause.addEventListener("click", () => {
 els.btnReset.addEventListener("click", () => {
   unlockAudio();
   playClick();
+  prepareRoundMap();
   game.reset();
   els.score.textContent = "0";
   if (isTimedMode()) updateTimerDisplay(TIMED_SECONDS * 1000);
@@ -465,6 +510,19 @@ function renderModeChips() {
   }
 }
 
+function renderMapChips() {
+  if (!els.mapRow) return;
+  els.mapRow.innerHTML = "";
+  for (const m of MAP_SELECT_OPTIONS) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "chip" + (m.id === mapSelectId ? " active" : "");
+    btn.textContent = m.name;
+    btn.addEventListener("click", () => selectMapSelect(m.id));
+    els.mapRow.appendChild(btn);
+  }
+}
+
 function renderDifficultyChips() {
   els.difficultyRow.innerHTML = "";
   for (const d of DIFFICULTY_LIST) {
@@ -530,6 +588,17 @@ function selectMode(id) {
   els.score.textContent = "0";
   applyMode();
   renderModeChips();
+}
+
+function selectMapSelect(id) {
+  playClick();
+  mapSelectId = id === "random" ? "random" : "empty";
+  saveMapSelectId(mapSelectId);
+  prepareRoundMap();
+  game.reset();
+  els.score.textContent = "0";
+  if (isTimedMode()) updateTimerDisplay(TIMED_SECONDS * 1000);
+  renderMapChips();
 }
 
 function selectDifficulty(id) {
@@ -691,16 +760,15 @@ applyBodyTheme();
 applyDifficulty();
 applyFoodCount();
 applyMode();
+prepareRoundMap();
 renderSkinChips();
 renderModeChips();
+renderMapChips();
 renderDifficultyChips();
 renderFoodCountChips();
 renderThemeChips();
 applyAvatars().then(() => {
-  const hint = isTimedMode()
-    ? "限时 60 秒冲高分 · 撞死也保留分数"
-    : "方向键 / WASD / 滑动屏幕";
-  showOverlay("贴图贪吃蛇", hint, "开始游戏", false);
+  showOverlay("贴图贪吃蛇", readyHint(), "开始游戏", false);
   syncButtons("ready");
 });
 

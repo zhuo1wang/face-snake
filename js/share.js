@@ -9,6 +9,7 @@
  * @param {string} opts.difficultyName
  * @param {string} opts.skinName
  * @param {string} [opts.modeName]
+ * @param {string} [opts.mapName]
  * @param {string} [opts.headDataUrl]
  */
 export async function createScoreCard(opts) {
@@ -68,7 +69,10 @@ export async function createScoreCard(opts) {
 
   ctx.fillStyle = "#8aab9a";
   ctx.font = "400 26px 'Noto Sans SC', sans-serif";
-  ctx.fillText(opts.modeName ? `${opts.modeName} · 本局得分` : "本局得分", W / 2, 420);
+  {
+    const bits = [opts.modeName, opts.mapName].filter(Boolean);
+    ctx.fillText(bits.length ? `${bits.join(" · ")} · 本局得分` : "本局得分", W / 2, 420);
+  }
 
   ctx.fillStyle = "#5dffb0";
   ctx.font = "700 120px Fredoka, sans-serif";

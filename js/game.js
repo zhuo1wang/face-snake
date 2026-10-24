@@ -1,4 +1,4 @@
-const GRID = 20;
+import { GRID, MAP_EMPTY, buildMapIndex } from "./maps.js";
 
 /**
  * @typedef {{x:number,y:number}} Cell
@@ -16,7 +16,6 @@ export function createGame(canvas, options = {}) {
   let snake = [];
   /** @type {Cell[]} */
   let foods = [];
-  /** 同时存在的食物数量，默认 1 */
   let foodCount = 1;
   /** @type {Cell} */
   let dir = { x: 1, y: 0 };
@@ -32,9 +31,13 @@ export function createGame(canvas, options = {}) {
   let tickMs = 120;
   let bodyRgb = "40, 180, 90";
   let bodyEndRgb = "40, 80, 90";
-  /** 限时毫秒；0 表示经典无尽 */
   let timeLimitMs = 0;
   let timeLeftMs = 0;
+
+  let map = MAP_EMPTY;
+  let wallSet = new Set();
+  /** @type {Map<string, Cell>} */
+  let portalTo = new Map();
 
   /** @type {HTMLImageElement|null} */
   let headImg = null;
@@ -44,6 +47,13 @@ export function createGame(canvas, options = {}) {
   let dpr = 1;
   let cell = 20;
   let cssSize = 400;
+
+  function applyMapData(next) {
+    map = next || MAP_EMPTY;
+    const idx = buildMapIndex(map);
+    wallSet = idx.wallSet;
+    portalTo = idx.portalTo;
+  }
 
   function resetSnake() {
     const mid = Math.floor(GRID / 2);
@@ -67,11 +77,16 @@ export function createGame(canvas, options = {}) {
     return `${c.x},${c.y}`;
   }
 
-  /** 把场上食物补足到 foodCount（不与蛇、已有食物重叠） */
+  function isBlocked(x, y) {
+    return wallSet.has(`${x},${y}`);
+  }
+
   function ensureFoods() {
     const occupied = new Set([
       ...snake.map(cellKey),
       ...foods.map(cellKey),
+      ...wallSet,
+      ...portalTo.keys(),
     ]);
     while (foods.length < foodCount) {
       const empty = [];
@@ -112,7 +127,6 @@ export function createGame(canvas, options = {}) {
   }
 
   function setDirection(next) {
-    // 禁止直接 180° 掉头（相对当前已生效方向）
     if (next.x === -dir.x && next.y === -dir.y) return;
     pendingDir = next;
   }
@@ -120,14 +134,28 @@ export function createGame(canvas, options = {}) {
   function tick() {
     dir = pendingDir;
     const head = snake[0];
-    const next = { x: head.x + dir.x, y: head.y + dir.y };
+    let next = { x: head.x + dir.x, y: head.y + dir.y };
 
     if (next.x < 0 || next.y < 0 || next.x >= GRID || next.y >= GRID) {
-      endGame();
+      endGame("crash");
       return;
     }
+    if (isBlocked(next.x, next.y)) {
+      endGame("crash");
+      return;
+    }
+
+    const portalExit = portalTo.get(cellKey(next));
+    if (portalExit) {
+      next = { x: portalExit.x, y: portalExit.y };
+      if (isBlocked(next.x, next.y)) {
+        endGame("crash");
+        return;
+      }
+    }
+
     if (snake.some((s) => s.x === next.x && s.y === next.y)) {
-      endGame();
+      endGame("crash");
       return;
     }
 
@@ -144,7 +172,7 @@ export function createGame(canvas, options = {}) {
     }
   }
 
-  /** @param {'crash'|'time'} reason 撞死与时间到均保留本局分数 */
+  /** @param {'crash'|'time'} reason */
   function endGame(reason = "crash") {
     if (dead) return;
     dead = true;
@@ -184,6 +212,46 @@ export function createGame(canvas, options = {}) {
     ctx.fill();
   }
 
+  function drawWalls() {
+    for (const key of wallSet) {
+      const [xs, ys] = key.split(",");
+      const x = Number(xs);
+      const y = Number(ys);
+      drawRoundedCell(x, y, "#2a3d34", 0.08);
+      // 顶缘高光
+      const pad = cell * 0.08;
+      ctx.fillStyle = "rgba(120, 160, 140, 0.22)";
+      ctx.fillRect(x * cell + pad, y * cell + pad, cell - pad * 2, cell * 0.22);
+    }
+  }
+
+  function drawPortals() {
+    (map.portals || []).forEach((pair, i) => {
+      const color = i % 2 === 0 ? "#5ec8ff" : "#ff9b6a";
+      drawPortalCell(pair.a.x, pair.a.y, color);
+      drawPortalCell(pair.b.x, pair.b.y, color);
+    });
+  }
+
+  function drawPortalCell(x, y, color) {
+    const cx = x * cell + cell / 2;
+    const cy = y * cell + cell / 2;
+    const r = cell * 0.32;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.globalAlpha = 0.35;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.lineWidth = Math.max(1.5, dpr);
+    ctx.strokeStyle = color;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * 0.35, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+  }
+
   function drawImageCell(img, x, y, rotate = false) {
     if (!img) return;
     const pad = cell * 0.08;
@@ -205,15 +273,15 @@ export function createGame(canvas, options = {}) {
 
   function draw() {
     drawGrid();
+    drawWalls();
+    drawPortals();
 
-    // 蛇身（颜色随皮肤）
     for (let i = snake.length - 1; i >= 1; i--) {
       const t = i / Math.max(snake.length - 1, 1);
       const color = lerpRgb(bodyRgb, bodyEndRgb, t);
       drawRoundedCell(snake[i].x, snake[i].y, color);
     }
 
-    // 食物（可同时多个）
     for (const f of foods) {
       if (foodImg) {
         drawImageCell(foodImg, f.x, f.y, false);
@@ -222,7 +290,6 @@ export function createGame(canvas, options = {}) {
       }
     }
 
-    // 蛇头
     const head = snake[0];
     if (head) {
       if (headImg) {
@@ -265,7 +332,6 @@ export function createGame(canvas, options = {}) {
     tickMs = Math.max(40, Number(ms) || 120);
   }
 
-  /** @param {number} seconds 传 0 或负数关闭限时 */
   function setTimeLimit(seconds) {
     const sec = Number(seconds);
     timeLimitMs = Number.isFinite(sec) && sec > 0 ? Math.floor(sec * 1000) : 0;
@@ -273,6 +339,16 @@ export function createGame(canvas, options = {}) {
       timeLeftMs = timeLimitMs;
       if (timeLimitMs > 0) onTime(timeLeftMs);
     }
+  }
+
+  function setMap(nextMap) {
+    applyMapData(nextMap);
+    if (!running) {
+      // 准备阶段换图时重摆食物
+      foods = [];
+      ensureFoods();
+    }
+    draw();
   }
 
   function setBodyTheme(startRgb, endRgb) {
@@ -335,6 +411,7 @@ export function createGame(canvas, options = {}) {
     });
   }
 
+  applyMapData(MAP_EMPTY);
   resetSnake();
   resize();
   raf = requestAnimationFrame(loop);
@@ -350,10 +427,12 @@ export function createGame(canvas, options = {}) {
     setTickMs,
     setTimeLimit,
     setFoodCount,
+    setMap,
     setBodyTheme,
     resize,
     getScore: () => score,
     getTimeLeftMs: () => timeLeftMs,
+    getMapId: () => map.id,
     isTimed: () => timeLimitMs > 0,
     isRunning: () => running && !paused && !dead,
     isPaused: () => paused,

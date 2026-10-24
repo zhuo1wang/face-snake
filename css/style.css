@@ -39,6 +39,7 @@
   --body-grad: linear-gradient(180deg, #102018 0%, #0a1410 55%, #07100c 100%);
   --chip-bg: rgba(10, 16, 14, 0.55);
   --surface-muted: rgba(10, 16, 14, 0.55);
+  --panel-quiet-bg: rgba(14, 22, 19, 0.72);
   --btn-hover-bg: #16241e;
   --thumb-bg: #1a2822;
   --crop-bg: #070c0a;
@@ -87,6 +88,7 @@
   --body-grad: linear-gradient(180deg, #f4fbf6 0%, #e5f2ea 55%, #dceee3 100%);
   --chip-bg: rgba(255, 255, 255, 0.75);
   --surface-muted: #eef5f0;
+  --panel-quiet-bg: #f3f8f4;
   --btn-hover-bg: #e2ece6;
   --thumb-bg: #e8f0ea;
   --crop-bg: #e8f0ea;
@@ -212,6 +214,9 @@ body {
   font-weight: 600;
   color: var(--score-label-color);
   background: var(--score-label-bg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .info-card--best .info-label {
@@ -439,7 +444,7 @@ body {
 }
 
 .panel-quiet {
-  background: rgba(14, 22, 19, 0.7);
+  background: var(--panel-quiet-bg);
 }
 
 .panel-title {

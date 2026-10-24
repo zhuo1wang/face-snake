@@ -1,4 +1,4 @@
-const CACHE = "face-snake-v15";
+const CACHE = "face-snake-v16";
 const ASSETS = [
   "./",
   "./index.html",
@@ -10,6 +10,7 @@ const ASSETS = [
   "./js/crop.js",
   "./js/storage.js",
   "./js/skins.js",
+  "./js/maps.js",
   "./js/sound.js",
   "./js/share.js",
   "./manifest.webmanifest",
