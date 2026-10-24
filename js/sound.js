@@ -51,19 +51,19 @@ function tone({ freq = 440, duration = 0.08, type = "sine", gain = 0.04, slideTo
 }
 
 export function playEat() {
-  tone({ freq: 660, duration: 0.07, type: "triangle", gain: 0.05 });
-  setTimeout(() => tone({ freq: 880, duration: 0.06, type: "triangle", gain: 0.035 }), 40);
+  tone({ freq: 660, duration: 0.07, type: "triangle", gain: 0.12 });
+  setTimeout(() => tone({ freq: 880, duration: 0.06, type: "triangle", gain: 0.09 }), 40);
 }
 
 export function playDie() {
-  tone({ freq: 220, duration: 0.28, type: "sawtooth", gain: 0.045, slideTo: 80 });
+  tone({ freq: 220, duration: 0.28, type: "sawtooth", gain: 0.11, slideTo: 80 });
 }
 
 export function playClick() {
-  tone({ freq: 520, duration: 0.04, type: "square", gain: 0.025 });
+  tone({ freq: 520, duration: 0.04, type: "square", gain: 0.07 });
 }
 
 export function playStart() {
-  tone({ freq: 392, duration: 0.06, type: "sine", gain: 0.04 });
-  setTimeout(() => tone({ freq: 523, duration: 0.08, type: "sine", gain: 0.04 }), 70);
+  tone({ freq: 392, duration: 0.06, type: "sine", gain: 0.1 });
+  setTimeout(() => tone({ freq: 523, duration: 0.08, type: "sine", gain: 0.1 }), 70);
 }
