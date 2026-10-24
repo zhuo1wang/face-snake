@@ -127,7 +127,7 @@
         <section class="panel">
           <h3 class="panel-title">玩法模式</h3>
           <div class="chip-row" id="mode-row" role="group" aria-label="玩法模式"></div>
-          <p class="panel-note">经典无尽靠自己撑；限时 60 秒冲高分，中途撞死也保留本局分数。</p>
+          <p class="panel-note">经典无尽靠自己撑；限时 60 秒冲高分，中途撞死也保留本局分数。食物吃掉后随机补 1～2 个，场上保持 1～5 个。</p>
         </section>
 
         <!-- ④ 地图 -->
@@ -143,27 +143,25 @@
           <div class="chip-row" id="difficulty-row" role="group" aria-label="难度档位"></div>
         </section>
 
-        <!-- ⑥ 食物数量 -->
-        <section class="panel">
-          <h3 class="panel-title">同时食物数量</h3>
-          <div class="chip-row" id="food-count-row" role="group" aria-label="同时食物数量"></div>
-          <p class="panel-note">经典为 1 个；选 2 或 3 时场上会同时出现多个食物。</p>
-        </section>
-
-        <!-- ⑦ 界面主题 -->
+        <!-- ⑥ 界面主题 -->
         <section class="panel">
           <h3 class="panel-title">界面主题</h3>
           <div class="chip-row" id="theme-row" role="group" aria-label="界面主题"></div>
           <p class="panel-note">深色 / 浅色成套切换，避免只改背景导致字看不清。</p>
         </section>
 
-        <!-- ⑧ 音效 -->
+        <!-- ⑧ 音效 / 结算 -->
         <section class="panel">
-          <h3 class="panel-title">音效</h3>
+          <h3 class="panel-title">音效与结算</h3>
           <label class="toggle-row">
             <span>游戏音效</span>
             <input type="checkbox" id="toggle-sound" checked />
           </label>
+          <label class="toggle-row toggle-row--follow">
+            <span>结算吐槽</span>
+            <input type="checkbox" id="toggle-flavor" checked />
+          </label>
+          <p class="panel-note">结束后用一句短旁白代替冷冰冰的「游戏结束」，可随时关掉。</p>
         </section>
 
         <!-- ⑨ PWA -->
@@ -176,7 +174,7 @@
           </p>
         </section>
 
-        <p class="privacy">图片与设置仅保存在本机浏览器，不会上传服务器</p>
+        <p class="privacy">进度、最高分与贴图只保存在本机浏览器，不会上传服务器。使用无痕/隐私模式、清理网站数据或换设备后都会丢失，无法找回。</p>
       </div>
     </section>
   </div>

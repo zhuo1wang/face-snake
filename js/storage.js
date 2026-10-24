@@ -8,6 +8,8 @@ const KEYS = {
   skin: "face-snake:skinId",
   difficulty: "face-snake:difficulty",
   sound: "face-snake:soundEnabled",
+  flavor: "face-snake:flavorEnabled",
+  flavorRecent: "face-snake:flavorRecent",
   foodCount: "face-snake:foodCount",
   theme: "face-snake:theme",
 };
@@ -140,6 +142,39 @@ export function getSoundEnabled() {
 
 export function setSoundEnabled(on) {
   localStorage.setItem(KEYS.sound, on ? "1" : "0");
+}
+
+/** 结算人格吐槽，默认开 */
+export function getFlavorEnabled() {
+  const v = localStorage.getItem(KEYS.flavor);
+  if (v === null) return true;
+  return v !== "0";
+}
+
+export function setFlavorEnabled(on) {
+  localStorage.setItem(KEYS.flavor, on ? "1" : "0");
+}
+
+/** @returns {string[]} */
+export function getFlavorRecent() {
+  try {
+    const raw = localStorage.getItem(KEYS.flavorRecent);
+    if (!raw) return [];
+    const list = JSON.parse(raw);
+    return Array.isArray(list) ? list.filter((x) => typeof x === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+/** @param {string[]} list */
+export function setFlavorRecent(list) {
+  try {
+    const next = Array.isArray(list) ? list.slice(0, 8) : [];
+    localStorage.setItem(KEYS.flavorRecent, JSON.stringify(next));
+  } catch {
+    /* ignore quota */
+  }
 }
 
 export function getFoodCount() {

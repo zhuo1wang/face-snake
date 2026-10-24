@@ -15,11 +15,14 @@ import {
   setDifficultyId,
   getSoundEnabled,
   setSoundEnabled as saveSoundEnabled,
-  getFoodCount,
-  setFoodCount as saveFoodCount,
+  getFlavorEnabled,
+  setFlavorEnabled as saveFlavorEnabled,
+  getFlavorRecent,
+  setFlavorRecent,
   getThemeId,
   setThemeId as saveThemeId,
 } from "./storage.js";
+import { pickFlavor, nextRecentFlavors } from "./flavor.js";
 import { loadImage, shrinkDataUrlIfNeeded } from "./avatar.js";
 import { createCropEditor, loadImageFromFile } from "./crop.js";
 import {
@@ -81,9 +84,9 @@ const els = {
   previewFood: document.getElementById("preview-food"),
   skinRow: document.getElementById("skin-row"),
   difficultyRow: document.getElementById("difficulty-row"),
-  foodCountRow: document.getElementById("food-count-row"),
   themeRow: document.getElementById("theme-row"),
   toggleSound: document.getElementById("toggle-sound"),
+  toggleFlavor: document.getElementById("toggle-flavor"),
   btnInstallPwa: document.getElementById("btn-install-pwa"),
   pwaHint: document.getElementById("pwa-hint"),
   pwaIosHint: document.getElementById("pwa-ios-hint"),
@@ -115,7 +118,6 @@ const MAP_SELECT_OPTIONS = [
 
 let skinId = getSkin(getSkinId()).id;
 let difficultyId = getDifficulty(getDifficultyId()).id;
-let foodCount = getFoodCount();
 let themeId = getThemeId();
 let modeId = getModeId();
 let mapSelectId = getMapSelectId();
@@ -139,11 +141,16 @@ let editingKind = "head";
 let baselineDataUrl = null;
 let wantDefault = false;
 let lastGameScore = 0;
+/** 本局开始时的最高分，用于判断破纪录 / 差点 */
+let roundStartHigh = 0;
 let deferredInstallPrompt = null;
 
 const soundOn = getSoundEnabled();
 els.toggleSound.checked = soundOn;
 setSoundEnabled(soundOn);
+
+const flavorOn = getFlavorEnabled();
+if (els.toggleFlavor) els.toggleFlavor.checked = flavorOn;
 
 const cropper = createCropEditor(els.cropPreview, els.zoomSlider);
 
@@ -241,36 +248,36 @@ const game = createGame(els.canvas, {
   onTime(ms) {
     updateTimerDisplay(ms);
   },
-  onGameOver(score, reason = "crash") {
+  onGameOver(score, meta = {}) {
     lastGameScore = score;
+    const reason = meta?.reason === "time" ? "time" : "crash";
     // 撞死与时间到都保留本局分；仅撞死播死亡音
     if (reason === "crash") playDie();
     else playStart();
     const high = writeModeHigh(score);
     els.high.textContent = String(high);
     const mapBit = activeMap.id === "empty" ? "" : ` · ${activeMap.name}`;
-    if (reason === "time") {
-      showOverlay(
-        "时间到",
-        `60 秒得分 ${score}${mapBit} · 最高 ${high}`,
-        "再来一局",
-        true
-      );
-    } else if (isTimedMode()) {
-      showOverlay(
-        "游戏结束",
-        `本局得分 ${score}${mapBit} · 最高 ${high}`,
-        "再来一局",
-        true
-      );
-    } else {
-      showOverlay(
-        "游戏结束",
-        `本局得分 ${score}${mapBit} · 最高 ${high}`,
-        "再来一局",
-        true
-      );
+    const scoreHint =
+      reason === "time"
+        ? `60 秒得分 ${score}${mapBit} · 最高 ${high}`
+        : `本局得分 ${score}${mapBit} · 最高 ${high}`;
+
+    let title = reason === "time" ? "时间到" : "游戏结束";
+    if (getFlavorEnabled()) {
+      const { text } = pickFlavor({
+        score,
+        prevHigh: roundStartHigh,
+        endReason: reason,
+        deathKind: meta.deathKind || null,
+        moves: meta.moves || 0,
+        mapId: meta.mapId || activeMap.id,
+        recent: getFlavorRecent(),
+      });
+      title = text;
+      setFlavorRecent(nextRecentFlavors(getFlavorRecent(), text));
     }
+
+    showOverlay(title, scoreHint, "再来一局", true);
     syncButtons("over");
   },
   onStatus(status) {
@@ -323,10 +330,6 @@ function applyDifficulty() {
   game.setTickMs(getDifficulty(difficultyId).tickMs);
 }
 
-function applyFoodCount() {
-  game.setFoodCount(foodCount);
-}
-
 function applyMode() {
   game.setTimeLimit(isTimedMode() ? TIMED_SECONDS : 0);
   applyModeUi();
@@ -351,6 +354,7 @@ function showOverlay(title, hint, btnText, showScoreActions) {
   // 贴纸吉祥物 + 浅色开局样式，仅在「开始游戏」引导时使用
   const isStartGuide = btnText === "开始游戏" && !showScoreActions;
   els.overlay.classList.toggle("overlay--home", isStartGuide);
+  els.overlay.classList.toggle("overlay--settle", !!showScoreActions);
   setMascotPlaying(isStartGuide);
 }
 
@@ -374,6 +378,7 @@ function hideOverlay() {
   els.overlay.hidden = true;
   els.btnSaveScore.hidden = true;
   els.btnShareScore.hidden = true;
+  els.overlay.classList.remove("overlay--settle");
   setMascotPlaying(false);
 }
 
@@ -420,6 +425,7 @@ function startOrResume() {
   if (game.isDead()) {
     prepareRoundMap();
   }
+  roundStartHigh = readModeHigh();
   playStart();
   game.start();
 }
@@ -517,6 +523,13 @@ els.toggleSound.addEventListener("change", () => {
   if (on) playClick();
 });
 
+els.toggleFlavor?.addEventListener("change", () => {
+  const on = els.toggleFlavor.checked;
+  saveFlavorEnabled(on);
+  unlockAudio();
+  playClick();
+});
+
 function renderSkinChips() {
   els.skinRow.innerHTML = "";
   for (const skin of SKIN_LIST) {
@@ -564,18 +577,6 @@ function renderDifficultyChips() {
     btn.textContent = d.name;
     btn.addEventListener("click", () => selectDifficulty(d.id));
     els.difficultyRow.appendChild(btn);
-  }
-}
-
-function renderFoodCountChips() {
-  els.foodCountRow.innerHTML = "";
-  for (const n of [1, 2, 3]) {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "chip" + (n === foodCount ? " active" : "");
-    btn.textContent = `${n} 个`;
-    btn.addEventListener("click", () => selectFoodCount(n));
-    els.foodCountRow.appendChild(btn);
   }
 }
 
@@ -640,14 +641,6 @@ function selectDifficulty(id) {
   setDifficultyId(difficultyId);
   applyDifficulty();
   renderDifficultyChips();
-}
-
-function selectFoodCount(n) {
-  playClick();
-  foodCount = n === 2 || n === 3 ? n : 1;
-  saveFoodCount(foodCount);
-  applyFoodCount();
-  renderFoodCountChips();
 }
 
 function selectTheme(id) {
@@ -790,14 +783,12 @@ els.btnDismissWechat.addEventListener("click", () => {
 applyTheme();
 applyBodyTheme();
 applyDifficulty();
-applyFoodCount();
 applyMode();
 prepareRoundMap();
 renderSkinChips();
 renderModeChips();
 renderMapChips();
 renderDifficultyChips();
-renderFoodCountChips();
 renderThemeChips();
 applyAvatars().then(() => {
   showOverlay("贴图贪吃蛇", readyHint(), "开始游戏", false);

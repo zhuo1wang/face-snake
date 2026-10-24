@@ -367,6 +367,20 @@ body {
   letter-spacing: 0.02em;
 }
 
+/* 结算：人格句更大更醒目，分数行更克制 */
+.overlay--settle .overlay-title {
+  font-size: clamp(1.35rem, 4.5vw, 1.7rem);
+  font-weight: 700;
+  line-height: 1.35;
+  max-width: 12em;
+}
+
+.overlay--settle .overlay-hint {
+  font-size: 0.8rem;
+  color: var(--text-faint);
+  max-width: 18em;
+}
+
 .overlay--home .overlay-title {
   color: #3ecf7a;
   font-size: 1.55rem;
@@ -576,6 +590,10 @@ body {
   background: var(--surface-muted);
   font-size: 0.95rem;
   color: var(--text);
+}
+
+.toggle-row--follow {
+  margin-top: 8px;
 }
 
 .toggle-row input {
