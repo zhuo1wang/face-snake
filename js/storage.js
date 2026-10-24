@@ -1,5 +1,7 @@
 const KEYS = {
   highScore: "face-snake:highScore",
+  highScoreTimed: "face-snake:highScoreTimed",
+  mode: "face-snake:mode",
   head: "face-snake:headDataUrl",
   food: "face-snake:foodDataUrl",
   skin: "face-snake:skinId",
@@ -9,18 +11,43 @@ const KEYS = {
   theme: "face-snake:theme",
 };
 
-export function getHighScore() {
-  const n = Number(localStorage.getItem(KEYS.highScore) || 0);
+function readScore(key) {
+  const n = Number(localStorage.getItem(key) || 0);
   return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
 }
 
-export function setHighScore(score) {
-  const prev = getHighScore();
+function writeScoreIfBest(key, score, prev) {
   if (score > prev) {
-    localStorage.setItem(KEYS.highScore, String(score));
+    localStorage.setItem(key, String(score));
     return score;
   }
   return prev;
+}
+
+export function getHighScore() {
+  return readScore(KEYS.highScore);
+}
+
+export function setHighScore(score) {
+  return writeScoreIfBest(KEYS.highScore, score, getHighScore());
+}
+
+/** 限时 60 秒模式独立最高分 */
+export function getTimedHighScore() {
+  return readScore(KEYS.highScoreTimed);
+}
+
+export function setTimedHighScore(score) {
+  return writeScoreIfBest(KEYS.highScoreTimed, score, getTimedHighScore());
+}
+
+/** @returns {'classic'|'timed'} */
+export function getModeId() {
+  return localStorage.getItem(KEYS.mode) === "timed" ? "timed" : "classic";
+}
+
+export function setModeId(id) {
+  localStorage.setItem(KEYS.mode, id === "timed" ? "timed" : "classic");
 }
 
 export function getImageDataUrl(kind) {

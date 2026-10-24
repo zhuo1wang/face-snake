@@ -184,6 +184,10 @@ body {
   gap: 10px;
 }
 
+.score-cards.has-timer {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
 .info-card {
   overflow: hidden;
   border-radius: 16px;
@@ -194,6 +198,11 @@ body {
   -webkit-backdrop-filter: blur(14px);
   display: flex;
   flex-direction: column;
+}
+
+/* display:flex 会盖掉原生 [hidden]，经典模式必须藏掉倒计时卡 */
+.info-card[hidden] {
+  display: none !important;
 }
 
 .info-label {
@@ -210,6 +219,16 @@ body {
   color: var(--score-label-best-color);
 }
 
+.info-card--timer .info-label {
+  background: #cfe8ff;
+  color: #2a4a68;
+}
+
+[data-theme="light"] .info-card--timer .info-label {
+  background: #d7ebff;
+  color: #1e3f5c;
+}
+
 .info-value {
   padding: 10px 14px 12px;
   font-size: 1.75rem;
@@ -218,6 +237,16 @@ body {
   letter-spacing: 0.02em;
   text-shadow: 0 0 18px var(--mint-glow);
   line-height: 1.1;
+}
+
+.score-cards.has-timer .info-value {
+  font-size: 1.45rem;
+  padding: 10px 10px 12px;
+}
+
+.info-card--timer.is-urgent .info-value {
+  color: #ff7a59;
+  text-shadow: 0 0 16px rgba(255, 122, 89, 0.35);
 }
 
 .stage {
@@ -299,19 +328,21 @@ body {
   height: auto;
   display: block;
   margin: 4px 0 2px;
+  object-fit: contain;
   background: transparent;
   border: none;
   border-radius: 0;
   box-shadow: none;
-  /* 只给贴纸外形投影，避免出现「白底方块」感 */
+  /* 透明贴纸：只留外形投影，不要中间色块框 */
   filter: drop-shadow(0 14px 18px rgba(0, 0, 0, 0.2));
   pointer-events: none;
   user-select: none;
 }
 
 .overlay-mascot[hidden] {
-  display: none;
+  display: none !important;
 }
+
 
 .overlay-title {
   margin: 0;

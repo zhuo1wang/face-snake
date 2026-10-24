@@ -42,13 +42,17 @@
           <button type="button" class="btn btn-settings" id="btn-open-settings" aria-label="打开设置">⚙ 设置</button>
         </div>
 
-        <div class="score-cards">
+        <div class="score-cards" id="score-cards">
           <div class="info-card info-card--score">
             <span class="info-label">得分</span>
             <strong class="info-value" id="score">0</strong>
           </div>
+          <div class="info-card info-card--timer" id="timer-card" hidden>
+            <span class="info-label">剩余</span>
+            <strong class="info-value" id="timer">1:00</strong>
+          </div>
           <div class="info-card info-card--best">
-            <span class="info-label">最高分</span>
+            <span class="info-label" id="high-score-label">最高分</span>
             <strong class="info-value" id="high-score">0</strong>
           </div>
         </div>
@@ -59,7 +63,16 @@
           <div class="canvas-wrap" id="canvas-wrap">
             <canvas id="game" width="400" height="400" aria-label="贪吃蛇游戏区"></canvas>
             <div class="overlay overlay--home" id="overlay">
-              <img class="overlay-mascot" id="overlay-mascot" src="assets/mascot.png" alt="" width="180" height="180" />
+              <img
+                class="overlay-mascot"
+                id="overlay-mascot"
+                src="assets/mascot-anim.webp"
+                alt=""
+                width="180"
+                height="180"
+                decoding="async"
+                aria-hidden="true"
+              />
               <p class="overlay-title" id="overlay-title">贴图贪吃蛇</p>
               <p class="overlay-hint" id="overlay-hint">方向键 / WASD / 滑动屏幕</p>
               <div class="overlay-actions" id="overlay-actions">
@@ -110,27 +123,34 @@
           <div class="chip-row" id="skin-row" role="group" aria-label="默认皮肤"></div>
         </section>
 
-        <!-- ③ 难度 -->
+        <!-- ③ 玩法模式 -->
+        <section class="panel">
+          <h3 class="panel-title">玩法模式</h3>
+          <div class="chip-row" id="mode-row" role="group" aria-label="玩法模式"></div>
+          <p class="panel-note">经典无尽靠自己撑；限时 60 秒冲高分，中途撞死也保留本局分数。</p>
+        </section>
+
+        <!-- ④ 难度 -->
         <section class="panel">
           <h3 class="panel-title">难度选择</h3>
           <div class="chip-row" id="difficulty-row" role="group" aria-label="难度档位"></div>
         </section>
 
-        <!-- ④ 食物数量 -->
+        <!-- ⑤ 食物数量 -->
         <section class="panel">
           <h3 class="panel-title">同时食物数量</h3>
           <div class="chip-row" id="food-count-row" role="group" aria-label="同时食物数量"></div>
           <p class="panel-note">经典为 1 个；选 2 或 3 时场上会同时出现多个食物。</p>
         </section>
 
-        <!-- ⑤ 界面主题 -->
+        <!-- ⑥ 界面主题 -->
         <section class="panel">
           <h3 class="panel-title">界面主题</h3>
           <div class="chip-row" id="theme-row" role="group" aria-label="界面主题"></div>
           <p class="panel-note">深色 / 浅色成套切换，避免只改背景导致字看不清。</p>
         </section>
 
-        <!-- ⑥ 音效 -->
+        <!-- ⑦ 音效 -->
         <section class="panel">
           <h3 class="panel-title">音效</h3>
           <label class="toggle-row">
@@ -139,7 +159,7 @@
           </label>
         </section>
 
-        <!-- ⑥ PWA -->
+        <!-- ⑧ PWA -->
         <section class="panel panel-quiet">
           <h3 class="panel-title">添加到主屏幕</h3>
           <p class="panel-note" id="pwa-hint">安装后可从桌面图标打开，更像 App。</p>

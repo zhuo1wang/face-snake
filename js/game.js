@@ -10,6 +10,7 @@ export function createGame(canvas, options = {}) {
   const onEat = options.onEat || (() => {});
   const onGameOver = options.onGameOver || (() => {});
   const onStatus = options.onStatus || (() => {});
+  const onTime = options.onTime || (() => {});
 
   /** @type {Cell[]} */
   let snake = [];
@@ -31,6 +32,9 @@ export function createGame(canvas, options = {}) {
   let tickMs = 120;
   let bodyRgb = "40, 180, 90";
   let bodyEndRgb = "40, 80, 90";
+  /** 限时毫秒；0 表示经典无尽 */
+  let timeLimitMs = 0;
+  let timeLeftMs = 0;
 
   /** @type {HTMLImageElement|null} */
   let headImg = null;
@@ -53,8 +57,10 @@ export function createGame(canvas, options = {}) {
     score = 0;
     dead = false;
     foods = [];
+    timeLeftMs = timeLimitMs;
     ensureFoods();
     onScore(score);
+    if (timeLimitMs > 0) onTime(timeLeftMs);
   }
 
   function cellKey(c) {
@@ -138,12 +144,14 @@ export function createGame(canvas, options = {}) {
     }
   }
 
-  function endGame() {
+  /** @param {'crash'|'time'} reason 撞死与时间到均保留本局分数 */
+  function endGame(reason = "crash") {
+    if (dead) return;
     dead = true;
     running = false;
     paused = false;
     onStatus("over");
-    onGameOver(score);
+    onGameOver(score, reason);
     draw();
   }
 
@@ -232,8 +240,19 @@ export function createGame(canvas, options = {}) {
       return;
     }
     if (!lastTs) lastTs = ts;
-    acc += ts - lastTs;
+    const dt = ts - lastTs;
+    acc += dt;
     lastTs = ts;
+
+    if (timeLimitMs > 0) {
+      timeLeftMs = Math.max(0, timeLeftMs - dt);
+      onTime(timeLeftMs);
+      if (timeLeftMs <= 0) {
+        endGame("time");
+        return;
+      }
+    }
+
     while (acc >= tickMs) {
       acc -= tickMs;
       tick();
@@ -244,6 +263,16 @@ export function createGame(canvas, options = {}) {
 
   function setTickMs(ms) {
     tickMs = Math.max(40, Number(ms) || 120);
+  }
+
+  /** @param {number} seconds 传 0 或负数关闭限时 */
+  function setTimeLimit(seconds) {
+    const sec = Number(seconds);
+    timeLimitMs = Number.isFinite(sec) && sec > 0 ? Math.floor(sec * 1000) : 0;
+    if (!running) {
+      timeLeftMs = timeLimitMs;
+      if (timeLimitMs > 0) onTime(timeLeftMs);
+    }
   }
 
   function setBodyTheme(startRgb, endRgb) {
@@ -319,10 +348,13 @@ export function createGame(canvas, options = {}) {
     setHeadImage,
     setFoodImage,
     setTickMs,
+    setTimeLimit,
     setFoodCount,
     setBodyTheme,
     resize,
     getScore: () => score,
+    getTimeLeftMs: () => timeLeftMs,
+    isTimed: () => timeLimitMs > 0,
     isRunning: () => running && !paused && !dead,
     isPaused: () => paused,
     isDead: () => dead,
