@@ -171,6 +171,13 @@ body {
   gap: 12px;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 .brand-mark {
   margin: 0;
   font-size: 0.78rem;
@@ -400,6 +407,7 @@ body {
   font-size: 0.85rem;
   line-height: 1.55;
   max-width: 16em;
+  white-space: pre-line;
 }
 
 .overlay--home .overlay-hint {
@@ -423,9 +431,10 @@ body {
   gap: 8px;
 }
 
-/* ========== 设置页 ========== */
+/* ========== 设置 / 任务页 ========== */
 
-.view-settings {
+.view-settings,
+.view-tasks {
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -485,6 +494,282 @@ body {
   font-size: 0.8rem;
   line-height: 1.5;
   color: var(--text-faint);
+}
+
+.chip--locked {
+  opacity: 0.55;
+  border-style: dashed;
+}
+
+.chip-lock {
+  margin-left: 4px;
+  font-size: 0.7em;
+  color: var(--text-faint);
+}
+
+.task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.task-track {
+  --tube: var(--mint);
+  --tube-bright: var(--mint-bright);
+  --tube-glow: var(--mint-glow);
+  --tube-soft: var(--mint-soft);
+  --tube-core: #c8ffe0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.task-track-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.task-track-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.task-track-meta {
+  font-size: 0.75rem;
+  color: var(--text-faint);
+  text-align: right;
+}
+
+.task-track--timed {
+  --tube: #6ec8e8;
+  --tube-bright: #7de7ff;
+  --tube-glow: rgba(110, 200, 232, 0.28);
+  --tube-soft: rgba(110, 200, 232, 0.14);
+  --tube-core: #e0f7ff;
+}
+
+.task-track-rail {
+  position: relative;
+  padding: 0 2px 46px;
+}
+
+/* 霓虹灯管槽：深底 + 细描边，不是土黄 Loading 条 */
+.task-track-pill {
+  position: relative;
+  height: 22px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--tube) 35%, transparent);
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.12)),
+    var(--surface-muted);
+  box-shadow:
+    inset 0 1px 3px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(255, 255, 255, 0.03);
+  overflow: hidden;
+}
+
+[data-theme="light"] .task-track-pill {
+  background:
+    linear-gradient(180deg, rgba(20, 40, 30, 0.08), rgba(20, 40, 30, 0.03)),
+    rgba(255, 255, 255, 0.55);
+  box-shadow:
+    inset 0 1px 2px rgba(20, 50, 35, 0.12),
+    0 0 0 1px rgba(20, 50, 35, 0.04);
+}
+
+.task-track-fill {
+  position: absolute;
+  inset: 3px auto 3px 3px;
+  width: 0;
+  max-width: calc(100% - 6px);
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--tube) 55%, #0a1812) 0%,
+    var(--tube) 45%,
+    var(--tube-bright) 100%
+  );
+  box-shadow:
+    0 0 10px var(--tube-glow),
+    0 0 18px color-mix(in srgb, var(--tube-bright) 35%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  transition: width 0.35s ease;
+}
+
+.task-track-fill::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.4) 0%,
+    transparent 42%,
+    rgba(0, 0, 0, 0.12) 100%
+  );
+  pointer-events: none;
+}
+
+/* 前沿光点：像灯管头 */
+.task-track-fill::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transform: translateY(-50%);
+  background: var(--tube-core);
+  box-shadow:
+    0 0 6px 2px color-mix(in srgb, var(--tube-bright) 70%, transparent),
+    0 0 14px var(--tube-glow);
+  opacity: 0.95;
+  pointer-events: none;
+}
+
+.task-track-label {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+  color: var(--tube-core);
+  text-shadow:
+    0 0 8px color-mix(in srgb, var(--tube-bright) 65%, transparent),
+    0 1px 2px rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+  z-index: 2;
+  transform: translateX(-100%);
+  transition: left 0.35s ease;
+}
+
+.task-track-label.is-start {
+  transform: translateX(4px);
+  color: var(--tube-bright);
+}
+
+.task-track-label.is-end {
+  transform: translateX(calc(-100% - 2px));
+}
+
+[data-theme="light"] .task-track-label {
+  color: #0e3d28;
+  text-shadow: 0 0 6px color-mix(in srgb, var(--tube-bright) 40%, transparent);
+}
+
+[data-theme="light"] .task-track--timed .task-track-label {
+  color: #0a3a4a;
+}
+
+.task-track-nodes {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  top: 0;
+  height: 22px;
+  pointer-events: none;
+}
+
+.task-node {
+  position: absolute;
+  top: 11px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  pointer-events: auto;
+}
+
+.task-node-pip {
+  width: 11px;
+  height: 11px;
+  margin-top: -5.5px;
+  border-radius: 50%;
+  border: 1.5px solid color-mix(in srgb, var(--tube) 45%, transparent);
+  background: var(--bg-elevated);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--bg) 80%, transparent),
+    inset 0 0 4px rgba(0, 0, 0, 0.35);
+  flex-shrink: 0;
+}
+
+.task-node.is-done .task-node-pip {
+  background: var(--tube-bright);
+  border-color: var(--tube-core);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--tube) 25%, transparent),
+    0 0 10px var(--tube-glow);
+}
+
+.task-node.is-current .task-node-pip {
+  border-color: var(--tube-core);
+  box-shadow:
+    0 0 0 2px var(--tube-soft),
+    0 0 12px var(--tube-glow);
+  animation: task-pip-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes task-pip-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.85;
+  }
+}
+
+.task-node-score {
+  margin-top: 12px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.task-node-tag {
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--tube-bright);
+  letter-spacing: 0.04em;
+}
+
+.task-node-reward {
+  font-size: 0.68rem;
+  line-height: 1.2;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+.task-node.is-done .task-node-score {
+  color: var(--tube-bright);
+}
+
+.task-node.is-done .task-node-reward {
+  color: var(--tube);
+}
+
+.task-track.is-complete .task-track-pill {
+  border-color: color-mix(in srgb, var(--tube-bright) 55%, transparent);
+  box-shadow:
+    inset 0 1px 3px rgba(0, 0, 0, 0.35),
+    0 0 12px var(--tube-glow);
 }
 
 .avatar-actions {
@@ -852,6 +1137,40 @@ body {
   font-size: 0.88rem;
   line-height: 1.45;
   color: var(--text-dim);
+}
+
+.update-banner {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(12px + var(--safe-bottom));
+  z-index: 45;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  background: var(--panel-solid);
+  border: 1px solid rgba(110, 207, 154, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  box-shadow: var(--shadow-soft);
+}
+
+.update-banner[hidden] {
+  display: none;
+}
+
+.update-banner p {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.update-banner .btn {
+  flex-shrink: 0;
+  padding: 8px 14px;
+  font-size: 0.85rem;
 }
 
 /* ========== 响应式 ========== */

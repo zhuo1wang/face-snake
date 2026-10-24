@@ -19,6 +19,15 @@ export function createGame(canvas, options = {}) {
   /** 场上同时食物：最少 1、最多 5；吃后随机补 1～2 */
   const FOOD_MIN = 1;
   const FOOD_MAX = 5;
+  /**
+   * 生长：得分 ≤ 该值时吃 1 长 1；之后每吃 2 个才长 1 节。
+   * 得分仍是每食物 +1，与任务分档无关。
+   */
+  const GROW_FULL_UNTIL = 15;
+  /** 达到该长度后改用省电画法（少分层、不按节描边） */
+  const DRAW_SIMPLE_LEN = 40;
+  /** 更长时路径隔点取样，进一步降耗 */
+  const DRAW_SPARSE_LEN = 70;
   /** @type {Cell} */
   let dir = { x: 1, y: 0 };
   /** @type {Cell} */
@@ -195,6 +204,10 @@ export function createGame(canvas, options = {}) {
     if (eatIndex >= 0) {
       foods.splice(eatIndex, 1);
       score += 1;
+      // 前期每吃必长；超过阈值后每 2 分长 1 节
+      const shouldGrow =
+        score <= GROW_FULL_UNTIL || (score - GROW_FULL_UNTIL) % 2 === 0;
+      if (!shouldGrow) snake.pop();
       onScore(score);
       onEat(score);
       refillAfterEat();
@@ -251,11 +264,20 @@ export function createGame(canvas, options = {}) {
     ctx.fill();
   }
 
-  function snakeCenters() {
-    return snake.map((s) => ({
-      x: s.x * cell + cell / 2,
-      y: s.y * cell + cell / 2,
-    }));
+  /** @param {number} [step] 隔几节取一个点；始终包含尾节 */
+  function snakeCenters(step = 1) {
+    const pts = [];
+    const n = snake.length;
+    const stride = Math.max(1, step | 0);
+    for (let i = 0; i < n; i += stride) {
+      const s = snake[i];
+      pts.push({ x: s.x * cell + cell / 2, y: s.y * cell + cell / 2 });
+    }
+    if ((n - 1) % stride !== 0) {
+      const s = snake[n - 1];
+      pts.push({ x: s.x * cell + cell / 2, y: s.y * cell + cell / 2 });
+    }
+    return pts;
   }
 
   function traceSnakePath(pts) {
@@ -267,10 +289,24 @@ export function createGame(canvas, options = {}) {
     }
   }
 
-  function drawSnakeBody() {
-    if (snake.length < 2) return;
-    const pts = snakeCenters();
-    const baseW = cell * 0.78;
+  /** 长蛇省电：整路径 1～2 次描边，无按节渐变 */
+  function drawSnakeBodySimple(pts, baseW) {
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+    traceSnakePath(pts);
+    ctx.strokeStyle = `rgba(${bodyRgb}, 0.3)`;
+    ctx.lineWidth = baseW * 1.35;
+    ctx.stroke();
+
+    traceSnakePath(pts);
+    ctx.strokeStyle = `rgb(${bodyRgb})`;
+    ctx.lineWidth = baseW;
+    ctx.stroke();
+  }
+
+  /** 短蛇全特效：多层光 + 按节渐变 + 高光 */
+  function drawSnakeBodyFancy(pts, baseW) {
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
 
@@ -301,6 +337,16 @@ export function createGame(canvas, options = {}) {
     ctx.strokeStyle = "rgba(255, 255, 255, 0.38)";
     ctx.lineWidth = Math.max(1.2, baseW * 0.22);
     ctx.stroke();
+  }
+
+  function drawSnakeBody() {
+    if (snake.length < 2) return;
+    const baseW = cell * 0.78;
+    const simple = snake.length >= DRAW_SIMPLE_LEN;
+    const step = snake.length >= DRAW_SPARSE_LEN ? 2 : 1;
+    const pts = snakeCenters(step);
+    if (simple) drawSnakeBodySimple(pts, baseW);
+    else drawSnakeBodyFancy(pts, baseW);
   }
 
   function drawSnakeHead() {

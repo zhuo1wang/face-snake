@@ -86,12 +86,12 @@ function buildGates(n) {
   const xR = n - 1 - xL;
   const midY = Math.floor(n / 2);
   const gap = clamp(Math.round(n * 0.18), 2, 3);
+  // 不在 mid 行铺横墙：蛇出生在 (mid-1..mid-3, mid)，横墙会压头导致开局即死
   const walls = [
     ...vWall(xL, 1, midY - gap),
     ...vWall(xL, midY + gap, n - 2),
     ...vWall(xR, 1, midY - gap),
     ...vWall(xR, midY + gap, n - 2),
-    ...hWall(midY, Math.floor(n / 2) - 1, Math.floor(n / 2) + 1),
   ];
   const p = clamp(Math.round(n * 0.15), 2, 3);
   return {

@@ -21,8 +21,24 @@ import {
   setFlavorRecent,
   getThemeId,
   setThemeId as saveThemeId,
+  getCompletedTaskIds,
+  addCompletedTaskId,
+  getUnlockedSkinIds,
+  addUnlockedSkinId,
+  getModeBestScore,
+  setModeBestScore,
 } from "./storage.js";
 import { pickFlavor, nextRecentFlavors } from "./flavor.js";
+import {
+  TASK_LIST,
+  TASK_TRACKS,
+  evaluateNewTasks,
+  formatTaskProgress,
+  isFreeSkin,
+  getTaskForSkin,
+  getTaskById,
+  trackFillRatio,
+} from "./tasks.js";
 import { loadImage, shrinkDataUrlIfNeeded } from "./avatar.js";
 import { createCropEditor, loadImageFromFile } from "./crop.js";
 import {
@@ -35,6 +51,7 @@ import {
   getMap,
   pickRandomObstacleMap,
   MAP_EMPTY,
+  RANDOM_MAP_IDS,
   GRID_DESKTOP,
   GRID_MOBILE,
 } from "./maps.js";
@@ -56,8 +73,11 @@ import {
 const els = {
   viewHome: document.getElementById("view-home"),
   viewSettings: document.getElementById("view-settings"),
+  viewTasks: document.getElementById("view-tasks"),
   btnOpenSettings: document.getElementById("btn-open-settings"),
+  btnOpenTasks: document.getElementById("btn-open-tasks"),
   btnBackHome: document.getElementById("btn-back-home"),
+  btnBackHomeTasks: document.getElementById("btn-back-home-tasks"),
   canvas: document.getElementById("game"),
   wrap: document.getElementById("canvas-wrap"),
   scoreCards: document.getElementById("score-cards"),
@@ -83,6 +103,7 @@ const els = {
   previewHead: document.getElementById("preview-head"),
   previewFood: document.getElementById("preview-food"),
   skinRow: document.getElementById("skin-row"),
+  taskList: document.getElementById("task-list"),
   difficultyRow: document.getElementById("difficulty-row"),
   themeRow: document.getElementById("theme-row"),
   toggleSound: document.getElementById("toggle-sound"),
@@ -100,6 +121,8 @@ const els = {
   btnCloseModal: document.getElementById("btn-close-modal"),
   wechatTip: document.getElementById("wechat-tip"),
   btnDismissWechat: document.getElementById("btn-dismiss-wechat"),
+  updateBanner: document.getElementById("update-banner"),
+  btnApplyUpdate: document.getElementById("btn-apply-update"),
 };
 
 const skinThumbs = Object.fromEntries(
@@ -116,7 +139,14 @@ const MAP_SELECT_OPTIONS = [
   { id: "random", name: "每局随机" },
 ];
 
+seedModeBestsFromLegacy();
+syncTasksFromExistingBest();
+
 let skinId = getSkin(getSkinId()).id;
+if (!isSkinUnlocked(skinId)) {
+  skinId = "classic";
+  setSkinId(skinId);
+}
 let difficultyId = getDifficulty(getDifficultyId()).id;
 let themeId = getThemeId();
 let modeId = getModeId();
@@ -158,12 +188,71 @@ function isTimedMode() {
   return modeId === "timed";
 }
 
+function isSkinUnlocked(id) {
+  if (isFreeSkin(id)) return true;
+  return getUnlockedSkinIds().includes(id);
+}
+
 function readModeHigh() {
   return getMapHighScore(modeId, activeMap.id);
 }
 
 function writeModeHigh(score) {
-  return setMapHighScore(modeId, activeMap.id, score);
+  const high = setMapHighScore(modeId, activeMap.id, score);
+  setModeBestScore(modeId, high);
+  return high;
+}
+
+/** 用各图旧最高分种子模式总最高（取 max），便于老存档直接对上任务 */
+function seedModeBestsFromLegacy() {
+  const mapIds = ["empty", ...RANDOM_MAP_IDS];
+  for (const mode of /** @type {const} */ (["classic", "timed"])) {
+    let best = 0;
+    for (const mapId of mapIds) {
+      best = Math.max(best, getMapHighScore(mode, mapId));
+    }
+    if (best > 0) setModeBestScore(mode, best);
+  }
+}
+
+/**
+ * 按快照检定任务并自动解锁奖励
+ * @param {import('./tasks.js').RunSnapshot} snap
+ * @param {{ skipRequireTimeUp?: boolean }} [opts] 启动补发时跳过「需撑满」任务
+ */
+function applyTaskRewards(snap, opts = {}) {
+  const completed = new Set(getCompletedTaskIds());
+  let newly = evaluateNewTasks(snap, completed);
+  if (opts.skipRequireTimeUp) {
+    newly = newly.filter((t) => !t.condition.requireTimeUp);
+  }
+  const unlockedNames = [];
+  for (const task of newly) {
+    addCompletedTaskId(task.id);
+    if (task.reward?.type === "skin" && task.reward.skinId) {
+      addUnlockedSkinId(task.reward.skinId);
+      unlockedNames.push(getSkin(task.reward.skinId).name);
+    }
+  }
+  return { newly, unlockedNames };
+}
+
+/** 启动时：已有最高分可补发 best_score / 普通 run_score（不含必须撑满） */
+function syncTasksFromExistingBest() {
+  for (const mode of /** @type {const} */ (["classic", "timed"])) {
+    const best = getModeBestScore(mode);
+    if (best <= 0) continue;
+    applyTaskRewards(
+      {
+        mode,
+        mapId: "empty",
+        runScore: best,
+        endedByTime: false,
+        bestScore: best,
+      },
+      { skipRequireTimeUp: true }
+    );
+  }
 }
 
 function modeLabel() {
@@ -185,21 +274,31 @@ function prepareRoundMap() {
   refreshHighScoreUi();
 }
 
-/** 按屏幕宽度切换格数；进行中则打断并重开准备态 */
-function applyPreferredGridSize(forceReset = false) {
+/** 本局进行中（含暂停/结算）时不改格数，避免转屏打断 */
+function isRoundInProgress() {
+  return game.isRunning() || game.isPaused() || game.isDead();
+}
+
+/** 把格数同步到当前屏宽偏好；返回是否真的变了 */
+function commitPreferredGridSize() {
   const next = preferredGridSize();
   const changed = game.setGridSize(next);
   gridSize = game.getGridSize();
+  return changed;
+}
+
+/**
+ * 按屏幕宽度切换格数。
+ * 对局/暂停/结算中只推迟，等开新局再 commit（转过去又转回则偏好变回，等于不改）。
+ */
+function applyPreferredGridSize(forceReset = false) {
+  if (!forceReset && isRoundInProgress()) return;
+  const changed = commitPreferredGridSize();
   if (!changed && !forceReset) return;
-  const wasPlaying = game.isRunning() || game.isPaused();
   prepareRoundMap();
   game.reset();
   els.score.textContent = "0";
   if (isTimedMode()) updateTimerDisplay(TIMED_SECONDS * 1000);
-  if (wasPlaying) {
-    showOverlay("贴图贪吃蛇", readyHint(), "开始游戏", false);
-    syncButtons("ready");
-  }
 }
 
 function formatTime(ms) {
@@ -262,6 +361,15 @@ const game = createGame(els.canvas, {
         ? `60 秒得分 ${score}${mapBit} · 最高 ${high}`
         : `本局得分 ${score}${mapBit} · 最高 ${high}`;
 
+    const modeBest = getModeBestScore(modeId);
+    const { unlockedNames } = applyTaskRewards({
+      mode: modeId,
+      mapId: meta.mapId || activeMap.id,
+      runScore: score,
+      endedByTime: reason === "time",
+      bestScore: modeBest,
+    });
+
     let title = reason === "time" ? "时间到" : "游戏结束";
     if (getFlavorEnabled()) {
       const { text } = pickFlavor({
@@ -277,7 +385,14 @@ const game = createGame(els.canvas, {
       setFlavorRecent(nextRecentFlavors(getFlavorRecent(), text));
     }
 
-    showOverlay(title, scoreHint, "再来一局", true);
+    const hintParts = [scoreHint];
+    if (unlockedNames.length) {
+      hintParts.push(`解锁皮肤：${unlockedNames.join("、")}`);
+      renderSkinChips();
+      renderTaskList();
+    }
+
+    showOverlay(title, hintParts.join("\n"), "再来一局", true);
     syncButtons("over");
   },
   onStatus(status) {
@@ -421,8 +536,9 @@ function startOrResume() {
     game.pause();
     return;
   }
-  // 死后开新局：随机模式下重新抽地图
-  if (game.isDead()) {
+  // 开新局前应用转屏推迟的格数；变了或死后重开都要重备地图
+  const gridChanged = commitPreferredGridSize();
+  if (game.isDead() || gridChanged) {
     prepareRoundMap();
   }
   roundStartHigh = readModeHigh();
@@ -430,25 +546,44 @@ function startOrResume() {
   game.start();
 }
 
+function showHomeOnly() {
+  els.viewHome.hidden = false;
+  if (els.viewSettings) els.viewSettings.hidden = true;
+  if (els.viewTasks) els.viewTasks.hidden = true;
+}
+
 function openSettings() {
   playClick();
   unlockAudio();
   els.viewHome.hidden = true;
+  if (els.viewTasks) els.viewTasks.hidden = true;
   els.viewSettings.hidden = false;
   // 进设置时若在玩，自动暂停，避免后台继续跑
   if (game.isRunning()) game.pause();
   game.resize();
 }
 
+function openTasks() {
+  playClick();
+  unlockAudio();
+  els.viewHome.hidden = true;
+  els.viewSettings.hidden = true;
+  if (els.viewTasks) els.viewTasks.hidden = false;
+  renderTaskList();
+  if (game.isRunning()) game.pause();
+  game.resize();
+}
+
 function backHome() {
   playClick();
-  els.viewSettings.hidden = true;
-  els.viewHome.hidden = false;
+  showHomeOnly();
   requestAnimationFrame(() => game.resize());
 }
 
 els.btnOpenSettings.addEventListener("click", openSettings);
+els.btnOpenTasks?.addEventListener("click", openTasks);
 els.btnBackHome.addEventListener("click", backHome);
+els.btnBackHomeTasks?.addEventListener("click", backHome);
 els.btnStart.addEventListener("click", startOrResume);
 els.btnOverlayStart.addEventListener("click", startOrResume);
 els.btnPause.addEventListener("click", () => {
@@ -533,13 +668,87 @@ els.toggleFlavor?.addEventListener("change", () => {
 function renderSkinChips() {
   els.skinRow.innerHTML = "";
   for (const skin of SKIN_LIST) {
+    const unlocked = isSkinUnlocked(skin.id);
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "chip" + (skin.id === skinId ? " active" : "");
+    btn.className =
+      "chip" +
+      (skin.id === skinId ? " active" : "") +
+      (unlocked ? "" : " chip--locked");
     const preview = skinThumbs[skin.id].head;
-    btn.innerHTML = `<span class="dot" style="background-image:url('${preview}')"></span>${skin.name}`;
+    const lock = unlocked ? "" : '<span class="chip-lock" aria-hidden="true">锁</span>';
+    btn.innerHTML = `<span class="dot" style="background-image:url('${preview}')"></span>${skin.name}${lock}`;
+    if (!unlocked) {
+      const task = getTaskForSkin(skin.id);
+      btn.title = task ? `未解锁：${task.hint}` : "未解锁";
+      btn.setAttribute("aria-disabled", "true");
+    }
     btn.addEventListener("click", () => selectSkin(skin.id));
     els.skinRow.appendChild(btn);
+  }
+}
+
+function renderTaskList() {
+  if (!els.taskList) return;
+  els.taskList.innerHTML = "";
+  const completed = new Set(getCompletedTaskIds());
+  const ctx = {
+    classicBest: getModeBestScore("classic"),
+    timedBest: getModeBestScore("timed"),
+    completed,
+  };
+
+  for (const track of TASK_TRACKS) {
+    const tasks = track.taskIds.map(getTaskById).filter(Boolean);
+    const fill = trackFillRatio(track.mode, ctx);
+    const fillPct = (fill * 100).toFixed(1);
+    const best = track.mode === "timed" ? ctx.timedBest : ctx.classicBest;
+    const next = tasks.find((t) => !completed.has(t.id));
+    const nextLabel = next
+      ? formatTaskProgress(next, ctx).label
+      : "本线已全部完成";
+    const n = Math.max(tasks.length, 1);
+
+    const card = document.createElement("div");
+    card.className =
+      "task-track task-track--" +
+      track.mode +
+      (next ? "" : " is-complete");
+    card.setAttribute("role", "listitem");
+
+    const nodesHtml = tasks
+      .map((task, i) => {
+        const done = completed.has(task.id);
+        const isCurrent = !done && next && next.id === task.id;
+        const rewardName = getSkin(task.reward.skinId).name;
+        const score = String(task.condition.minScore);
+        const left = ((i + 0.5) / n) * 100;
+        const needFull = !!task.condition.requireTimeUp;
+        return `
+          <div class="task-node${done ? " is-done" : ""}${isCurrent ? " is-current" : ""}${needFull ? " is-timeup" : ""}"
+               style="left:${left.toFixed(2)}%"
+               title="${task.hint} → ${rewardName}">
+            <span class="task-node-pip" aria-hidden="true"></span>
+            <span class="task-node-score">${score}</span>
+            ${needFull ? '<span class="task-node-tag">撑满</span>' : ""}
+            <span class="task-node-reward">${rewardName}</span>
+          </div>`;
+      })
+      .join("");
+
+    card.innerHTML = `
+      <div class="task-track-head">
+        <strong class="task-track-title">${track.title}</strong>
+        <span class="task-track-meta">${nextLabel}</span>
+      </div>
+      <div class="task-track-rail">
+        <div class="task-track-pill" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(fill * 100)}" aria-label="${track.title}进度">
+          <div class="task-track-fill" style="width:${fillPct}%"></div>
+          <span class="task-track-label${fill < 0.12 ? " is-start" : ""}${fill > 0.88 ? " is-end" : ""}" style="left:${fillPct}%">${best}</span>
+        </div>
+        <div class="task-track-nodes">${nodesHtml}</div>
+      </div>`;
+    els.taskList.appendChild(card);
   }
 }
 
@@ -599,6 +808,11 @@ function renderThemeChips() {
 
 async function selectSkin(id) {
   playClick();
+  if (!isSkinUnlocked(id)) {
+    const task = getTaskForSkin(id);
+    alert(task ? `尚未解锁「${getSkin(id).name}」\n完成任务：${task.hint}` : "尚未解锁该皮肤");
+    return;
+  }
   const skin = getSkin(id);
   skinId = skin.id;
   currentSkin = skin;
@@ -670,9 +884,34 @@ els.btnSetHead.addEventListener("click", () => openAvatarModal("head"));
 els.btnSetFood.addEventListener("click", () => openAvatarModal("food"));
 els.btnCloseModal.addEventListener("click", () => els.modal.close());
 
+/** 上传前门：类型 + 原文件大小（裁剪后仍会 shrink） */
+const AVATAR_MAX_BYTES = 10 * 1024 * 1024;
+const AVATAR_OK_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+]);
+
+function isAllowedAvatarFile(file) {
+  if (AVATAR_OK_TYPES.has(file.type)) return true;
+  // 部分环境 type 为空，退回扩展名
+  return /\.(jpe?g|png|webp|gif)$/i.test(file.name || "");
+}
+
 els.fileInput.addEventListener("change", async () => {
   const file = els.fileInput.files?.[0];
   if (!file) return;
+  if (!isAllowedAvatarFile(file)) {
+    alert("请选择 JPG / PNG / WebP / GIF 图片");
+    els.fileInput.value = "";
+    return;
+  }
+  if (file.size > AVATAR_MAX_BYTES) {
+    alert("图片太大，请选不超过 10MB 的图");
+    els.fileInput.value = "";
+    return;
+  }
   try {
     const img = await loadImageFromFile(file);
     wantDefault = false;
@@ -761,11 +1000,62 @@ if (isStandalone()) {
   els.pwaHint.textContent = "iPhone 请按下面说明添加。";
 }
 
+/** 新 SW 已装好、等用户点「立即更新」再接管并刷新 */
+let waitingWorker = null;
+let refreshingForUpdate = false;
+
+function showUpdateBanner(worker) {
+  waitingWorker = worker;
+  if (els.updateBanner) els.updateBanner.hidden = false;
+}
+
+function trackInstallingWorker(worker) {
+  if (!worker) return;
+  worker.addEventListener("statechange", () => {
+    // 已有控制器 = 不是首次安装，而是更新
+    if (worker.state === "installed" && navigator.serviceWorker.controller) {
+      showUpdateBanner(worker);
+    }
+  });
+}
+
+els.btnApplyUpdate?.addEventListener("click", () => {
+  playClick();
+  if (!waitingWorker) return;
+  waitingWorker.postMessage({ type: "SKIP_WAITING" });
+  els.btnApplyUpdate.disabled = true;
+  els.btnApplyUpdate.textContent = "更新中…";
+});
+
 if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (refreshingForUpdate) return;
+    refreshingForUpdate = true;
+    window.location.reload();
+  });
+
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js").catch((err) => {
-      console.warn("Service Worker 注册失败", err);
-    });
+    navigator.serviceWorker
+      .register("./sw.js")
+      .then((reg) => {
+        if (reg.waiting && navigator.serviceWorker.controller) {
+          showUpdateBanner(reg.waiting);
+        }
+        reg.addEventListener("updatefound", () => {
+          trackInstallingWorker(reg.installing);
+        });
+        // 回到前台时检查是否有新版本
+        const check = () => {
+          reg.update().catch(() => {});
+        };
+        document.addEventListener("visibilitychange", () => {
+          if (document.visibilityState === "visible") check();
+        });
+        window.addEventListener("focus", check);
+      })
+      .catch((err) => {
+        console.warn("Service Worker 注册失败", err);
+      });
   });
 }
 
@@ -786,6 +1076,7 @@ applyDifficulty();
 applyMode();
 prepareRoundMap();
 renderSkinChips();
+renderTaskList();
 renderModeChips();
 renderMapChips();
 renderDifficultyChips();

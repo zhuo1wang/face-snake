@@ -311,7 +311,56 @@ function drawHeartFood(ctx, size) {
   ctx.stroke();
 }
 
-/** @type {Record<string, {id:string,name:string,body:string,bodyEnd:string,makeHead:Function,makeFood:Function}>} */
+/** 奖励皮通用：径向材质头 + 细环 + 高光，无卡通五官 */
+function drawRewardHead(ctx, size, c0, c1, c2, ring) {
+  const g = ctx.createRadialGradient(
+    size * 0.34,
+    size * 0.3,
+    6,
+    size / 2,
+    size / 2,
+    size * 0.55
+  );
+  g.addColorStop(0, c0);
+  g.addColorStop(0.5, c1);
+  g.addColorStop(1, c2);
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, size, size);
+  ctx.fillStyle = "rgba(255,255,255,0.22)";
+  ctx.beginPath();
+  ctx.ellipse(size * 0.36, size * 0.34, size * 0.16, size * 0.09, -0.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = ring;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(size / 2, size / 2, size * 0.38, 0, Math.PI * 2);
+  ctx.stroke();
+}
+
+function drawRewardFood(ctx, size, c0, c1) {
+  const g = ctx.createRadialGradient(
+    size * 0.38,
+    size * 0.34,
+    4,
+    size / 2,
+    size / 2,
+    size * 0.48
+  );
+  g.addColorStop(0, c0);
+  g.addColorStop(1, c1);
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, size, size);
+  ctx.strokeStyle = "rgba(255,255,255,0.4)";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(size / 2, size / 2, size * 0.38, 0, Math.PI * 2);
+  ctx.stroke();
+}
+
+/**
+ * @typedef {{id:string,name:string,body:string,bodyEnd:string,makeHead:Function,makeFood:Function,unlockTaskId?:string}} SkinDef
+ * @type {Record<string, SkinDef>}
+ */
 export const SKINS = {
   classic: {
     id: "classic",
@@ -353,6 +402,85 @@ export const SKINS = {
     bodyEnd: "160, 40, 100",
     makeHead: () => circleCanvas(drawHeartHead),
     makeFood: () => circleCanvas(drawHeartFood),
+  },
+  // —— 任务奖励皮（unlockTaskId 与 tasks.js 对应）——
+  bamboo: {
+    id: "bamboo",
+    name: "竹青",
+    body: "110, 150, 120",
+    bodyEnd: "40, 70, 55",
+    unlockTaskId: "classic_best_15",
+    makeHead: () =>
+      circleCanvas((ctx, s) =>
+        drawRewardHead(ctx, s, "#c5d9c8", "#6d9a78", "#2a4534", "rgba(180,210,190,0.7)")
+      ),
+    makeFood: () =>
+      circleCanvas((ctx, s) => drawRewardFood(ctx, s, "#d4e8d8", "#4a7a58")),
+  },
+  amber: {
+    id: "amber",
+    name: "琥珀",
+    body: "240, 170, 60",
+    bodyEnd: "120, 70, 30",
+    unlockTaskId: "classic_best_30",
+    makeHead: () =>
+      circleCanvas((ctx, s) =>
+        drawRewardHead(ctx, s, "#ffe0a0", "#e89a30", "#6b3a12", "rgba(255,220,150,0.75)")
+      ),
+    makeFood: () =>
+      circleCanvas((ctx, s) => drawRewardFood(ctx, s, "#ffd78a", "#c46a18")),
+  },
+  magma: {
+    id: "magma",
+    name: "熔核",
+    body: "255, 90, 40",
+    bodyEnd: "50, 25, 30",
+    unlockTaskId: "classic_best_50",
+    makeHead: () =>
+      circleCanvas((ctx, s) =>
+        drawRewardHead(ctx, s, "#ffb080", "#ff4a20", "#2a1010", "rgba(255,160,100,0.8)")
+      ),
+    makeFood: () =>
+      circleCanvas((ctx, s) => drawRewardFood(ctx, s, "#ffc4a0", "#d03018")),
+  },
+  frost: {
+    id: "frost",
+    name: "霜蓝",
+    body: "160, 220, 255",
+    bodyEnd: "40, 80, 140",
+    unlockTaskId: "timed_run_12",
+    makeHead: () =>
+      circleCanvas((ctx, s) =>
+        drawRewardHead(ctx, s, "#f0fbff", "#7ec8f0", "#2a5080", "rgba(200,235,255,0.8)")
+      ),
+    makeFood: () =>
+      circleCanvas((ctx, s) => drawRewardFood(ctx, s, "#e8f7ff", "#3a7ab0")),
+  },
+  volt: {
+    id: "volt",
+    name: "电光",
+    body: "255, 240, 120",
+    bodyEnd: "120, 60, 200",
+    unlockTaskId: "timed_full_15",
+    makeHead: () =>
+      circleCanvas((ctx, s) =>
+        drawRewardHead(ctx, s, "#fffce8", "#ffe566", "#5a28a8", "rgba(255,255,180,0.85)")
+      ),
+    makeFood: () =>
+      circleCanvas((ctx, s) => drawRewardFood(ctx, s, "#fff6b0", "#8a40d0")),
+  },
+  wraith: {
+    id: "wraith",
+    name: "幽影",
+    body: "140, 120, 170",
+    bodyEnd: "25, 20, 40",
+    unlockTaskId: "timed_run_25",
+    makeHead: () =>
+      circleCanvas((ctx, s) =>
+        drawRewardHead(ctx, s, "#d0c8e0", "#6a5a88", "#18141f", "rgba(200,190,230,0.55)")
+      ),
+    makeFood: () =>
+      circleCanvas((ctx, s) => drawRewardFood(ctx, s, "#c8bdd8", "#3a3048")),
   },
 };
 

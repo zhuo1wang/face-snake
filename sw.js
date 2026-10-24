@@ -1,4 +1,4 @@
-const CACHE = "face-snake-v27";
+const CACHE = "face-snake-v41";
 const ASSETS = [
   "./",
   "./index.html",
@@ -14,15 +14,20 @@ const ASSETS = [
   "./js/sound.js",
   "./js/share.js",
   "./js/flavor.js",
+  "./js/tasks.js",
   "./manifest.webmanifest",
   "./assets/mascot.png",
   "./assets/mascot-anim.webp",
 ];
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE).then((cache) => cache.addAll(ASSETS)).then(() => self.skipWaiting())
-  );
+  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(ASSETS)));
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener("activate", (event) => {

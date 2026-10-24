@@ -12,6 +12,10 @@ const KEYS = {
   flavorRecent: "face-snake:flavorRecent",
   foodCount: "face-snake:foodCount",
   theme: "face-snake:theme",
+  tasksDone: "face-snake:tasksCompleted",
+  skinsUnlocked: "face-snake:skinsUnlocked",
+  bestClassic: "face-snake:bestClassic",
+  bestTimed: "face-snake:bestTimed",
 };
 
 function readScore(key) {
@@ -195,4 +199,71 @@ export function getThemeId() {
 
 export function setThemeId(id) {
   localStorage.setItem(KEYS.theme, id === "light" ? "light" : "dark");
+}
+
+function readStringList(key) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return [];
+    const list = JSON.parse(raw);
+    return Array.isArray(list) ? list.filter((x) => typeof x === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeStringList(key, list) {
+  try {
+    const next = Array.isArray(list) ? [...new Set(list.filter(Boolean))] : [];
+    localStorage.setItem(key, JSON.stringify(next));
+    return next;
+  } catch {
+    return readStringList(key);
+  }
+}
+
+/** @returns {string[]} */
+export function getCompletedTaskIds() {
+  return readStringList(KEYS.tasksDone);
+}
+
+/** @param {string[]} ids */
+export function setCompletedTaskIds(ids) {
+  return writeStringList(KEYS.tasksDone, ids);
+}
+
+/** @param {string} id */
+export function addCompletedTaskId(id) {
+  const prev = getCompletedTaskIds();
+  if (prev.includes(id)) return prev;
+  return setCompletedTaskIds([...prev, id]);
+}
+
+/** @returns {string[]} */
+export function getUnlockedSkinIds() {
+  return readStringList(KEYS.skinsUnlocked);
+}
+
+/** @param {string[]} ids */
+export function setUnlockedSkinIds(ids) {
+  return writeStringList(KEYS.skinsUnlocked, ids);
+}
+
+/** @param {string} id */
+export function addUnlockedSkinId(id) {
+  const prev = getUnlockedSkinIds();
+  if (prev.includes(id)) return prev;
+  return setUnlockedSkinIds([...prev, id]);
+}
+
+/** 跨地图的模式历史最高（任务 best_score / 进度用） */
+export function getModeBestScore(modeId) {
+  const key = modeId === "timed" ? KEYS.bestTimed : KEYS.bestClassic;
+  return readScore(key);
+}
+
+export function setModeBestScore(modeId, score) {
+  const key = modeId === "timed" ? KEYS.bestTimed : KEYS.bestClassic;
+  const prev = getModeBestScore(modeId);
+  return writeScoreIfBest(key, score, prev);
 }
