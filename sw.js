@@ -1,4 +1,4 @@
-const CACHE = "face-snake-v16";
+const CACHE = "face-snake-v18";
 const ASSETS = [
   "./",
   "./index.html",

@@ -46,7 +46,11 @@
   --radius-sm: 12px;
   --radius: 18px;
   --radius-lg: 24px;
+  /* 加到主屏幕 / 刘海屏：四边都要避开系统栏 */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
   --font: "DM Sans", "Noto Sans SC", system-ui, sans-serif;
   --shadow-soft: 0 12px 40px rgba(0, 0, 0, 0.35);
   --inset-glow: inset 0 1px 0 rgba(110, 207, 154, 0.08);
@@ -128,10 +132,16 @@ body {
 .app {
   width: min(440px, 100%);
   margin: 0 auto;
-  padding: 18px 16px calc(18px + var(--safe-bottom));
+  padding:
+    calc(18px + var(--safe-top))
+    calc(16px + var(--safe-right))
+    calc(18px + var(--safe-bottom))
+    calc(16px + var(--safe-left));
   min-height: 100dvh;
+  min-height: 100svh;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
 }
 
 .view[hidden] {
@@ -831,7 +841,7 @@ body {
 @media (min-width: 520px) {
   .app {
     width: min(480px, 100%);
-    padding-top: 24px;
+    padding-top: calc(24px + var(--safe-top));
   }
 
   .brand-title {
@@ -840,6 +850,49 @@ body {
 
   .info-value {
     font-size: 1.7rem;
+  }
+}
+
+/* 手机：棋盘尽量贴边，配合更少格数放大蛇/食物 */
+@media (max-width: 600px) {
+  .app {
+    width: 100%;
+    padding:
+      calc(12px + var(--safe-top))
+      calc(10px + var(--safe-right))
+      calc(12px + var(--safe-bottom))
+      calc(10px + var(--safe-left));
+  }
+
+  .view-home {
+    gap: 12px;
+  }
+
+  .home-header {
+    gap: 10px;
+  }
+
+  .score-cards {
+    gap: 8px;
+  }
+
+  .info-value {
+    font-size: 1.45rem;
+    padding: 8px 12px 10px;
+  }
+
+  .info-label {
+    padding: 6px 12px;
+    font-size: 0.78rem;
+  }
+
+  .board-card--light {
+    padding: 6px;
+    border-radius: 20px;
+  }
+
+  .board-card--light .canvas-wrap {
+    border-radius: 16px;
   }
 }
 

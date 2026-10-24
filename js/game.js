@@ -1,4 +1,4 @@
-import { GRID, MAP_EMPTY, buildMapIndex } from "./maps.js";
+import { GRID_DESKTOP, MAP_EMPTY, buildMapIndex, normalizeGridSize } from "./maps.js";
 
 /**
  * @typedef {{x:number,y:number}} Cell
@@ -33,6 +33,8 @@ export function createGame(canvas, options = {}) {
   let bodyEndRgb = "40, 80, 90";
   let timeLimitMs = 0;
   let timeLeftMs = 0;
+  /** 手机用更少格，单元格更大 */
+  let gridSize = normalizeGridSize(options.gridSize || GRID_DESKTOP);
 
   let map = MAP_EMPTY;
   let wallSet = new Set();
@@ -56,7 +58,7 @@ export function createGame(canvas, options = {}) {
   }
 
   function resetSnake() {
-    const mid = Math.floor(GRID / 2);
+    const mid = Math.floor(gridSize / 2);
     snake = [
       { x: mid - 1, y: mid },
       { x: mid - 2, y: mid },
@@ -90,8 +92,8 @@ export function createGame(canvas, options = {}) {
     ]);
     while (foods.length < foodCount) {
       const empty = [];
-      for (let y = 0; y < GRID; y++) {
-        for (let x = 0; x < GRID; x++) {
+      for (let y = 0; y < gridSize; y++) {
+        for (let x = 0; x < gridSize; x++) {
           if (!occupied.has(`${x},${y}`)) empty.push({ x, y });
         }
       }
@@ -122,7 +124,7 @@ export function createGame(canvas, options = {}) {
     canvas.height = px;
     canvas.style.width = `${cssSize}px`;
     canvas.style.height = `${cssSize}px`;
-    cell = px / GRID;
+    cell = px / gridSize;
     draw();
   }
 
@@ -136,7 +138,7 @@ export function createGame(canvas, options = {}) {
     const head = snake[0];
     let next = { x: head.x + dir.x, y: head.y + dir.y };
 
-    if (next.x < 0 || next.y < 0 || next.x >= GRID || next.y >= GRID) {
+    if (next.x < 0 || next.y < 0 || next.x >= gridSize || next.y >= gridSize) {
       endGame("crash");
       return;
     }
@@ -190,7 +192,7 @@ export function createGame(canvas, options = {}) {
 
     ctx.strokeStyle = "rgba(93, 255, 176, 0.06)";
     ctx.lineWidth = Math.max(1, dpr * 0.5);
-    for (let i = 0; i <= GRID; i++) {
+    for (let i = 0; i <= gridSize; i++) {
       const p = i * cell;
       ctx.beginPath();
       ctx.moveTo(p, 0);
@@ -254,7 +256,8 @@ export function createGame(canvas, options = {}) {
 
   function drawImageCell(img, x, y, rotate = false) {
     if (!img) return;
-    const pad = cell * 0.08;
+    // 少留边，格子更大时头/食物更易辨认
+    const pad = cell * (gridSize <= 14 ? 0.04 : 0.08);
     const s = cell - pad * 2;
     const cx = x * cell + cell / 2;
     const cy = y * cell + cell / 2;
@@ -351,6 +354,16 @@ export function createGame(canvas, options = {}) {
     draw();
   }
 
+  /** @param {number} n */
+  function setGridSize(n) {
+    const next = normalizeGridSize(n);
+    if (next === gridSize) return false;
+    gridSize = next;
+    // 格数变化后蛇/食物坐标失效，由外部 reset + 重新 setMap
+    cell = (canvas.width || 1) / gridSize;
+    return true;
+  }
+
   function setBodyTheme(startRgb, endRgb) {
     bodyRgb = startRgb || bodyRgb;
     bodyEndRgb = endRgb || bodyEndRgb;
@@ -428,11 +441,13 @@ export function createGame(canvas, options = {}) {
     setTimeLimit,
     setFoodCount,
     setMap,
+    setGridSize,
     setBodyTheme,
     resize,
     getScore: () => score,
     getTimeLeftMs: () => timeLeftMs,
     getMapId: () => map.id,
+    getGridSize: () => gridSize,
     isTimed: () => timeLimitMs > 0,
     isRunning: () => running && !paused && !dead,
     isPaused: () => paused,

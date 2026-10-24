@@ -32,6 +32,8 @@ import {
   getMap,
   pickRandomObstacleMap,
   MAP_EMPTY,
+  GRID_DESKTOP,
+  GRID_MOBILE,
 } from "./maps.js";
 import {
   setSoundEnabled,
@@ -118,7 +120,16 @@ let themeId = getThemeId();
 let modeId = getModeId();
 let mapSelectId = getMapSelectId();
 let activeMap = MAP_EMPTY;
+let gridSize = preferredGridSize();
 let currentSkin = getSkin(skinId);
+
+function preferredGridSize() {
+  // 窄屏手机自动 14 格，单元格大约比 20 格大 40%+
+  if (typeof window !== "undefined" && window.matchMedia) {
+    if (window.matchMedia("(max-width: 600px)").matches) return GRID_MOBILE;
+  }
+  return GRID_DESKTOP;
+}
 if (getSkinId() !== skinId) setSkinId(skinId);
 if (getDifficultyId() !== difficultyId) setDifficultyId(difficultyId);
 
@@ -156,12 +167,32 @@ function mapLabel() {
   return activeMap?.name || "空板";
 }
 
-/** 准备本局地图：空板固定；随机则从障碍池抽取 */
+/** 准备本局地图：空板固定；随机则从障碍池抽取（按当前格数生成） */
 function prepareRoundMap() {
+  const n = game.getGridSize();
   activeMap =
-    mapSelectId === "random" ? pickRandomObstacleMap() : getMap("empty");
+    mapSelectId === "random"
+      ? pickRandomObstacleMap(n)
+      : getMap("empty", n);
   game.setMap(activeMap);
   refreshHighScoreUi();
+}
+
+/** 按屏幕宽度切换格数；进行中则打断并重开准备态 */
+function applyPreferredGridSize(forceReset = false) {
+  const next = preferredGridSize();
+  const changed = game.setGridSize(next);
+  gridSize = game.getGridSize();
+  if (!changed && !forceReset) return;
+  const wasPlaying = game.isRunning() || game.isPaused();
+  prepareRoundMap();
+  game.reset();
+  els.score.textContent = "0";
+  if (isTimedMode()) updateTimerDisplay(TIMED_SECONDS * 1000);
+  if (wasPlaying) {
+    showOverlay("贴图贪吃蛇", readyHint(), "开始游戏", false);
+    syncButtons("ready");
+  }
 }
 
 function formatTime(ms) {
@@ -199,6 +230,7 @@ function applyModeUi() {
 }
 
 const game = createGame(els.canvas, {
+  gridSize: preferredGridSize(),
   onScore(score) {
     els.score.textContent = String(score);
     els.high.textContent = String(writeModeHigh(score));
@@ -772,4 +804,7 @@ applyAvatars().then(() => {
   syncButtons("ready");
 });
 
-window.addEventListener("resize", () => game.resize());
+window.addEventListener("resize", () => {
+  applyPreferredGridSize(false);
+  game.resize();
+});
