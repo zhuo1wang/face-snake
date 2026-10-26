@@ -363,6 +363,184 @@ function drawRewardFood(ctx, size, c0, c1) {
   ctx.stroke();
 }
 
+function paintRoundFace(ctx, size, c0, c1, c2, cy = 0.52) {
+  const cx = size / 2;
+  const y = size * cy;
+  const g = ctx.createRadialGradient(size * 0.38, size * (cy - 0.12), 4, cx, y, size * 0.4);
+  g.addColorStop(0, c0);
+  g.addColorStop(0.5, c1);
+  g.addColorStop(1, c2);
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(cx, y, size * 0.34, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+/** 竹青：双叶 */
+function drawBambooHead(ctx, size) {
+  paintRoundFace(ctx, size, "#c5d9c8", "#6d9a78", "#2a4534");
+  ctx.fillStyle = "#3d6b48";
+  ctx.beginPath();
+  ctx.ellipse(size * 0.28, size * 0.28, size * 0.12, size * 0.055, -0.7, 0, Math.PI * 2);
+  ctx.ellipse(size * 0.72, size * 0.26, size * 0.12, size * 0.055, 0.7, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "#1e3a28";
+  ctx.lineWidth = Math.max(2, size * 0.03);
+  ctx.beginPath();
+  ctx.moveTo(size * 0.34, size * 0.32);
+  ctx.lineTo(size * 0.42, size * 0.42);
+  ctx.moveTo(size * 0.66, size * 0.3);
+  ctx.lineTo(size * 0.58, size * 0.42);
+  ctx.stroke();
+  ctx.fillStyle = "#1e3a28";
+  ctx.beginPath();
+  ctx.arc(size * 0.42, size * 0.54, size * 0.035, 0, Math.PI * 2);
+  ctx.arc(size * 0.58, size * 0.54, size * 0.035, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawBambooFood(ctx, size) {
+  paintRoundFace(ctx, size, "#d4e8d8", "#4a7a58", "#243828", 0.5);
+  ctx.fillStyle = "#2f5a3a";
+  ctx.beginPath();
+  ctx.ellipse(size * 0.5, size * 0.32, size * 0.14, size * 0.06, 0.2, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+/** 琥珀：金环 + 六边高光 */
+function drawAmberHead(ctx, size) {
+  paintRoundFace(ctx, size, "#ffe0a0", "#e89a30", "#6b3a12");
+  ctx.strokeStyle = "#fff0c0";
+  ctx.lineWidth = Math.max(3, size * 0.045);
+  ctx.beginPath();
+  ctx.arc(size / 2, size * 0.52, size * 0.28, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.fillStyle = "rgba(255, 240, 180, 0.85)";
+  ctx.beginPath();
+  const hx = size / 2;
+  const hy = size * 0.42;
+  const r = size * 0.1;
+  for (let i = 0; i < 6; i++) {
+    const a = (Math.PI / 3) * i - Math.PI / 6;
+    const x = hx + Math.cos(a) * r;
+    const y = hy + Math.sin(a) * r;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = "#5a2e0c";
+  ctx.beginPath();
+  ctx.arc(size * 0.42, size * 0.56, size * 0.035, 0, Math.PI * 2);
+  ctx.arc(size * 0.58, size * 0.56, size * 0.035, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawAmberFood(ctx, size) {
+  paintRoundFace(ctx, size, "#ffd78a", "#c46a18", "#5a2e0c", 0.5);
+  ctx.strokeStyle = "#fff0c0";
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.arc(size / 2, size * 0.5, size * 0.22, 0, Math.PI * 2);
+  ctx.stroke();
+}
+
+/** 霜蓝：冰晶冠 */
+function drawFrostHead(ctx, size) {
+  paintRoundFace(ctx, size, "#f0fbff", "#7ec8f0", "#2a5080");
+  ctx.strokeStyle = "#e8f7ff";
+  ctx.fillStyle = "rgba(200, 235, 255, 0.9)";
+  ctx.lineWidth = Math.max(2.5, size * 0.04);
+  ctx.lineJoin = "round";
+  // 三叉冰晶
+  ctx.beginPath();
+  ctx.moveTo(size * 0.5, size * 0.08);
+  ctx.lineTo(size * 0.5, size * 0.36);
+  ctx.moveTo(size * 0.5, size * 0.18);
+  ctx.lineTo(size * 0.32, size * 0.3);
+  ctx.moveTo(size * 0.5, size * 0.18);
+  ctx.lineTo(size * 0.68, size * 0.3);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(size * 0.5, size * 0.1);
+  ctx.lineTo(size * 0.44, size * 0.22);
+  ctx.lineTo(size * 0.5, size * 0.2);
+  ctx.lineTo(size * 0.56, size * 0.22);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = "#1a4068";
+  ctx.beginPath();
+  ctx.arc(size * 0.42, size * 0.54, size * 0.035, 0, Math.PI * 2);
+  ctx.arc(size * 0.58, size * 0.54, size * 0.035, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#fff";
+  ctx.beginPath();
+  ctx.arc(size * 0.41, size * 0.52, size * 0.015, 0, Math.PI * 2);
+  ctx.arc(size * 0.57, size * 0.52, size * 0.015, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawFrostFood(ctx, size) {
+  paintRoundFace(ctx, size, "#e8f7ff", "#3a7ab0", "#1a4068", 0.5);
+  ctx.strokeStyle = "#f0fbff";
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.moveTo(size * 0.5, size * 0.28);
+  ctx.lineTo(size * 0.5, size * 0.55);
+  ctx.moveTo(size * 0.5, size * 0.36);
+  ctx.lineTo(size * 0.36, size * 0.48);
+  ctx.moveTo(size * 0.5, size * 0.36);
+  ctx.lineTo(size * 0.64, size * 0.48);
+  ctx.stroke();
+}
+
+/** 电光：侧闪 + 电弧眼 */
+function drawVoltHead(ctx, size) {
+  paintRoundFace(ctx, size, "#fffce8", "#ffe566", "#5a28a8");
+  ctx.strokeStyle = "#fff8a0";
+  ctx.fillStyle = "#b8ff60";
+  ctx.lineWidth = Math.max(3, size * 0.05);
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(size * 0.12, size * 0.32);
+  ctx.lineTo(size * 0.28, size * 0.42);
+  ctx.lineTo(size * 0.18, size * 0.48);
+  ctx.lineTo(size * 0.34, size * 0.58);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(size * 0.88, size * 0.32);
+  ctx.lineTo(size * 0.72, size * 0.42);
+  ctx.lineTo(size * 0.82, size * 0.48);
+  ctx.lineTo(size * 0.66, size * 0.58);
+  ctx.stroke();
+  // 电弧眼
+  ctx.strokeStyle = "#5a28a8";
+  ctx.lineWidth = Math.max(2.5, size * 0.04);
+  ctx.beginPath();
+  ctx.moveTo(size * 0.36, size * 0.52);
+  ctx.lineTo(size * 0.4, size * 0.48);
+  ctx.lineTo(size * 0.44, size * 0.54);
+  ctx.lineTo(size * 0.48, size * 0.5);
+  ctx.moveTo(size * 0.52, size * 0.5);
+  ctx.lineTo(size * 0.56, size * 0.54);
+  ctx.lineTo(size * 0.6, size * 0.48);
+  ctx.lineTo(size * 0.64, size * 0.52);
+  ctx.stroke();
+}
+
+function drawVoltFood(ctx, size) {
+  paintRoundFace(ctx, size, "#fff6b0", "#8a40d0", "#3a1860", 0.5);
+  ctx.strokeStyle = "#ffe566";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(size * 0.42, size * 0.28);
+  ctx.lineTo(size * 0.55, size * 0.42);
+  ctx.lineTo(size * 0.45, size * 0.48);
+  ctx.lineTo(size * 0.58, size * 0.64);
+  ctx.stroke();
+}
+
 /** 熔核：双角 + 岩浆裂纹 + 炽瞳（刻意加粗，小格子也认得出） */
 function drawMagmaHead(ctx, size) {
   const cx = size / 2;
@@ -526,7 +704,7 @@ function drawWraithFood(ctx, size) {
 }
 
 /**
- * @typedef {{id:string,name:string,body:string,bodyEnd:string,makeHead:Function,makeFood:Function,unlockTaskId?:string}} SkinDef
+ * @typedef {{id:string,name:string,body:string,bodyEnd:string,makeHead:Function,makeFood:Function,unlockTaskId?:string, bodyStyle?: 'magma'|'wraith'|null}} SkinDef
  * @type {Record<string, SkinDef>}
  */
 export const SKINS = {
@@ -578,12 +756,8 @@ export const SKINS = {
     body: "110, 150, 120",
     bodyEnd: "40, 70, 55",
     unlockTaskId: "classic_best_15",
-    makeHead: () =>
-      circleCanvas((ctx, s) =>
-        drawRewardHead(ctx, s, "#c5d9c8", "#6d9a78", "#2a4534", "rgba(180,210,190,0.7)")
-      ),
-    makeFood: () =>
-      circleCanvas((ctx, s) => drawRewardFood(ctx, s, "#d4e8d8", "#4a7a58")),
+    makeHead: () => circleCanvas(drawBambooHead, { clipCircle: false }),
+    makeFood: () => circleCanvas(drawBambooFood),
   },
   amber: {
     id: "amber",
@@ -591,18 +765,15 @@ export const SKINS = {
     body: "240, 170, 60",
     bodyEnd: "120, 70, 30",
     unlockTaskId: "classic_best_30",
-    makeHead: () =>
-      circleCanvas((ctx, s) =>
-        drawRewardHead(ctx, s, "#ffe0a0", "#e89a30", "#6b3a12", "rgba(255,220,150,0.75)")
-      ),
-    makeFood: () =>
-      circleCanvas((ctx, s) => drawRewardFood(ctx, s, "#ffd78a", "#c46a18")),
+    makeHead: () => circleCanvas(drawAmberHead, { clipCircle: false }),
+    makeFood: () => circleCanvas(drawAmberFood),
   },
   magma: {
     id: "magma",
     name: "熔核",
     body: "255, 90, 40",
     bodyEnd: "50, 25, 30",
+    bodyStyle: "magma",
     unlockTaskId: "classic_best_50",
     makeHead: () => circleCanvas(drawMagmaHead, { clipCircle: false }),
     makeFood: () => circleCanvas(drawMagmaFood),
@@ -613,12 +784,8 @@ export const SKINS = {
     body: "160, 220, 255",
     bodyEnd: "40, 80, 140",
     unlockTaskId: "timed_run_12",
-    makeHead: () =>
-      circleCanvas((ctx, s) =>
-        drawRewardHead(ctx, s, "#f0fbff", "#7ec8f0", "#2a5080", "rgba(200,235,255,0.8)")
-      ),
-    makeFood: () =>
-      circleCanvas((ctx, s) => drawRewardFood(ctx, s, "#e8f7ff", "#3a7ab0")),
+    makeHead: () => circleCanvas(drawFrostHead, { clipCircle: false }),
+    makeFood: () => circleCanvas(drawFrostFood),
   },
   volt: {
     id: "volt",
@@ -626,18 +793,15 @@ export const SKINS = {
     body: "255, 240, 120",
     bodyEnd: "120, 60, 200",
     unlockTaskId: "timed_full_15",
-    makeHead: () =>
-      circleCanvas((ctx, s) =>
-        drawRewardHead(ctx, s, "#fffce8", "#ffe566", "#5a28a8", "rgba(255,255,180,0.85)")
-      ),
-    makeFood: () =>
-      circleCanvas((ctx, s) => drawRewardFood(ctx, s, "#fff6b0", "#8a40d0")),
+    makeHead: () => circleCanvas(drawVoltHead, { clipCircle: false }),
+    makeFood: () => circleCanvas(drawVoltFood),
   },
   wraith: {
     id: "wraith",
     name: "幽影",
     body: "140, 120, 170",
     bodyEnd: "25, 20, 40",
+    bodyStyle: "wraith",
     unlockTaskId: "timed_run_25",
     makeHead: () => circleCanvas(drawWraithHead, { clipCircle: false }),
     makeFood: () => circleCanvas(drawWraithFood),

@@ -1,4 +1,4 @@
-const CACHE = "face-snake-v43";
+const CACHE = "face-snake-v45";
 const ASSETS = [
   "./",
   "./index.html",
@@ -17,7 +17,6 @@ const ASSETS = [
   "./js/tasks.js",
   "./manifest.webmanifest",
   "./assets/mascot.png",
-  "./assets/mascot-anim.webp",
 ];
 
 self.addEventListener("install", (event) => {

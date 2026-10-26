@@ -438,7 +438,11 @@ async function applyAvatars() {
 }
 
 function applyBodyTheme() {
-  game.setBodyTheme(currentSkin.body, currentSkin.bodyEnd);
+  game.setBodyTheme(
+    currentSkin.body,
+    currentSkin.bodyEnd,
+    currentSkin.bodyStyle || null
+  );
 }
 
 function applyDifficulty() {
@@ -477,15 +481,9 @@ function setMascotPlaying(show) {
   const el = els.overlayMascot;
   if (!el) return;
   el.hidden = !show;
-  const reduceMotion =
-    typeof matchMedia === "function" &&
-    matchMedia("(prefers-reduced-motion: reduce)").matches;
-  // 减少动效时用静态海报；否则播透明 WebP 动图
-  const animSrc = "assets/mascot-anim.webp";
   const stillSrc = "assets/mascot.png";
-  const want = !show ? el.src : reduceMotion ? stillSrc : animSrc;
-  if (show && el.getAttribute("src") !== want) {
-    el.src = want;
+  if (show && el.getAttribute("src") !== stillSrc) {
+    el.src = stillSrc;
   }
 }
 

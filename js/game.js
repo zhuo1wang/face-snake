@@ -43,6 +43,8 @@ export function createGame(canvas, options = {}) {
   let tickMs = 120;
   let bodyRgb = "40, 180, 90";
   let bodyEndRgb = "40, 80, 90";
+  /** @type {null|'magma'|'wraith'} 终档身子装饰 */
+  let bodyStyle = null;
   let timeLimitMs = 0;
   let timeLeftMs = 0;
   /** 手机用更少格，单元格更大 */
@@ -339,6 +341,46 @@ export function createGame(canvas, options = {}) {
     ctx.stroke();
   }
 
+  /** 熔核裂纹 / 幽影光点：沿蛇脊采样绘制 */
+  function drawBodyDecor(pts, baseW) {
+    if (!bodyStyle || pts.length < 2) return;
+    const stride = bodyStyle === "wraith" ? 2 : 1;
+    if (bodyStyle === "magma") {
+      ctx.lineCap = "round";
+      ctx.strokeStyle = "rgba(255, 220, 120, 0.85)";
+      ctx.lineWidth = Math.max(1.5, baseW * 0.14);
+      for (let i = 1; i < pts.length - 1; i += 2) {
+        const a = pts[i - 1];
+        const b = pts[i];
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const len = Math.hypot(dx, dy) || 1;
+        const px = (-dy / len) * baseW * 0.22;
+        const py = (dx / len) * baseW * 0.22;
+        ctx.beginPath();
+        ctx.moveTo(b.x - px * 0.6, b.y - py * 0.6);
+        ctx.lineTo(b.x + px, b.y + py);
+        ctx.stroke();
+      }
+      return;
+    }
+    if (bodyStyle === "wraith") {
+      for (let i = 1; i < pts.length; i += stride) {
+        const p = pts[i];
+        const t = i / pts.length;
+        const rad = Math.max(1.2, baseW * (0.12 - t * 0.04));
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, rad * 2.2, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(160, 200, 255, 0.2)";
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, rad, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(230, 240, 255, 0.75)";
+        ctx.fill();
+      }
+    }
+  }
+
   function drawSnakeBody() {
     if (snake.length < 2) return;
     const baseW = cell * 0.78;
@@ -347,6 +389,7 @@ export function createGame(canvas, options = {}) {
     const pts = snakeCenters(step);
     if (simple) drawSnakeBodySimple(pts, baseW);
     else drawSnakeBodyFancy(pts, baseW);
+    drawBodyDecor(pts, baseW);
   }
 
   function drawSnakeHead() {
@@ -575,9 +618,15 @@ export function createGame(canvas, options = {}) {
     return true;
   }
 
-  function setBodyTheme(startRgb, endRgb) {
+  /**
+   * @param {string} startRgb
+   * @param {string} endRgb
+   * @param {null|'magma'|'wraith'} [style]
+   */
+  function setBodyTheme(startRgb, endRgb, style) {
     bodyRgb = startRgb || bodyRgb;
     bodyEndRgb = endRgb || bodyEndRgb;
+    bodyStyle = style === "magma" || style === "wraith" ? style : null;
     draw();
   }
 
