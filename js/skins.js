@@ -3,17 +3,23 @@
  * 程序化头偏材质/几何，少涂鸦五官；classic 默认仍用吉祥物贴纸。
  */
 
-function circleCanvas(draw) {
+/**
+ * @param {(ctx: CanvasRenderingContext2D, size: number) => void} draw
+ * @param {{ clipCircle?: boolean }} [opts] clipCircle=false 时保留角/帽等伸出圆形的部分
+ */
+function circleCanvas(draw, opts = {}) {
   const size = 128;
   const canvas = document.createElement("canvas");
   canvas.width = size;
   canvas.height = size;
   const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, size, size);
-  ctx.beginPath();
-  ctx.arc(size / 2, size / 2, size / 2 - 2, 0, Math.PI * 2);
-  ctx.closePath();
-  ctx.clip();
+  if (opts.clipCircle !== false) {
+    ctx.beginPath();
+    ctx.arc(size / 2, size / 2, size / 2 - 2, 0, Math.PI * 2);
+    ctx.closePath();
+    ctx.clip();
+  }
   draw(ctx, size);
   return canvas.toDataURL("image/png");
 }
@@ -357,6 +363,168 @@ function drawRewardFood(ctx, size, c0, c1) {
   ctx.stroke();
 }
 
+/** 熔核：双角 + 岩浆裂纹 + 炽瞳（刻意加粗，小格子也认得出） */
+function drawMagmaHead(ctx, size) {
+  const cx = size / 2;
+  const cy = size * 0.55;
+
+  // 角（伸出画布上沿，局里不再裁圆才能看见）
+  ctx.fillStyle = "#2a1008";
+  ctx.beginPath();
+  ctx.moveTo(size * 0.28, size * 0.48);
+  ctx.lineTo(size * 0.08, size * 0.02);
+  ctx.lineTo(size * 0.42, size * 0.4);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(size * 0.72, size * 0.48);
+  ctx.lineTo(size * 0.92, size * 0.02);
+  ctx.lineTo(size * 0.58, size * 0.4);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = "#ff6a20";
+  ctx.beginPath();
+  ctx.moveTo(size * 0.3, size * 0.46);
+  ctx.lineTo(size * 0.14, size * 0.08);
+  ctx.lineTo(size * 0.4, size * 0.4);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(size * 0.7, size * 0.46);
+  ctx.lineTo(size * 0.86, size * 0.08);
+  ctx.lineTo(size * 0.6, size * 0.4);
+  ctx.closePath();
+  ctx.fill();
+
+  const g = ctx.createRadialGradient(size * 0.4, size * 0.42, 4, cx, cy, size * 0.42);
+  g.addColorStop(0, "#ffd0a0");
+  g.addColorStop(0.45, "#ff4a18");
+  g.addColorStop(1, "#1a0808");
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(cx, cy, size * 0.34, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = "#ffe08a";
+  ctx.lineWidth = Math.max(3, size * 0.055);
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(size * 0.34, size * 0.38);
+  ctx.lineTo(size * 0.44, size * 0.55);
+  ctx.lineTo(size * 0.38, size * 0.7);
+  ctx.moveTo(size * 0.6, size * 0.4);
+  ctx.lineTo(size * 0.54, size * 0.56);
+  ctx.lineTo(size * 0.64, size * 0.72);
+  ctx.stroke();
+
+  ctx.fillStyle = "#1a0808";
+  ctx.beginPath();
+  ctx.ellipse(size * 0.4, size * 0.54, size * 0.08, size * 0.055, 0, 0, Math.PI * 2);
+  ctx.ellipse(size * 0.6, size * 0.54, size * 0.08, size * 0.055, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#ffe566";
+  ctx.beginPath();
+  ctx.arc(size * 0.4, size * 0.54, size * 0.035, 0, Math.PI * 2);
+  ctx.arc(size * 0.6, size * 0.54, size * 0.035, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawMagmaFood(ctx, size) {
+  const g = ctx.createRadialGradient(size * 0.4, size * 0.35, 2, size / 2, size / 2, size * 0.45);
+  g.addColorStop(0, "#ffe0a8");
+  g.addColorStop(0.55, "#ff5020");
+  g.addColorStop(1, "#401010");
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(size / 2, size / 2, size * 0.36, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "#ffe08a";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(size * 0.35, size * 0.32);
+  ctx.lineTo(size * 0.48, size * 0.55);
+  ctx.moveTo(size * 0.58, size * 0.36);
+  ctx.lineTo(size * 0.52, size * 0.6);
+  ctx.stroke();
+}
+
+/** 幽影：尖帽 + 眼镜光 + 侧角（加粗，小格子可辨） */
+function drawWraithHead(ctx, size) {
+  const cx = size / 2;
+  const cy = size * 0.56;
+
+  ctx.fillStyle = "#1a1528";
+  ctx.beginPath();
+  ctx.moveTo(cx, size * 0.02);
+  ctx.lineTo(size * 0.14, size * 0.5);
+  ctx.lineTo(size * 0.86, size * 0.5);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = "#2a2038";
+  ctx.beginPath();
+  ctx.moveTo(size * 0.18, size * 0.42);
+  ctx.lineTo(size * 0.02, size * 0.18);
+  ctx.lineTo(size * 0.3, size * 0.38);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(size * 0.82, size * 0.42);
+  ctx.lineTo(size * 0.98, size * 0.18);
+  ctx.lineTo(size * 0.7, size * 0.38);
+  ctx.fill();
+
+  const face = ctx.createRadialGradient(size * 0.42, size * 0.48, 4, cx, cy, size * 0.36);
+  face.addColorStop(0, "#9a8cb8");
+  face.addColorStop(0.55, "#4a3c68");
+  face.addColorStop(1, "#12101a");
+  ctx.fillStyle = face;
+  ctx.beginPath();
+  ctx.arc(cx, cy, size * 0.3, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = "rgba(200, 220, 255, 0.95)";
+  ctx.lineWidth = Math.max(3, size * 0.05);
+  ctx.beginPath();
+  ctx.arc(size * 0.4, size * 0.54, size * 0.11, 0, Math.PI * 2);
+  ctx.arc(size * 0.6, size * 0.54, size * 0.11, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(size * 0.51, size * 0.54);
+  ctx.lineTo(size * 0.49, size * 0.54);
+  ctx.stroke();
+
+  ctx.fillStyle = "rgba(160, 220, 255, 0.4)";
+  ctx.beginPath();
+  ctx.arc(size * 0.4, size * 0.54, size * 0.085, 0, Math.PI * 2);
+  ctx.arc(size * 0.6, size * 0.54, size * 0.085, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#e8f4ff";
+  ctx.beginPath();
+  ctx.arc(size * 0.38, size * 0.51, size * 0.03, 0, Math.PI * 2);
+  ctx.arc(size * 0.58, size * 0.51, size * 0.03, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawWraithFood(ctx, size) {
+  const g = ctx.createRadialGradient(size * 0.4, size * 0.36, 2, size / 2, size / 2, size * 0.42);
+  g.addColorStop(0, "#ddd0f0");
+  g.addColorStop(0.5, "#6a5888");
+  g.addColorStop(1, "#120e18");
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(size / 2, size / 2, size * 0.34, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(180, 210, 255, 0.7)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(size / 2, size / 2, size * 0.18, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.fillStyle = "rgba(200, 230, 255, 0.5)";
+  ctx.beginPath();
+  ctx.arc(size * 0.42, size * 0.42, size * 0.06, 0, Math.PI * 2);
+  ctx.fill();
+}
+
 /**
  * @typedef {{id:string,name:string,body:string,bodyEnd:string,makeHead:Function,makeFood:Function,unlockTaskId?:string}} SkinDef
  * @type {Record<string, SkinDef>}
@@ -436,12 +604,8 @@ export const SKINS = {
     body: "255, 90, 40",
     bodyEnd: "50, 25, 30",
     unlockTaskId: "classic_best_50",
-    makeHead: () =>
-      circleCanvas((ctx, s) =>
-        drawRewardHead(ctx, s, "#ffb080", "#ff4a20", "#2a1010", "rgba(255,160,100,0.8)")
-      ),
-    makeFood: () =>
-      circleCanvas((ctx, s) => drawRewardFood(ctx, s, "#ffc4a0", "#d03018")),
+    makeHead: () => circleCanvas(drawMagmaHead, { clipCircle: false }),
+    makeFood: () => circleCanvas(drawMagmaFood),
   },
   frost: {
     id: "frost",
@@ -475,12 +639,8 @@ export const SKINS = {
     body: "140, 120, 170",
     bodyEnd: "25, 20, 40",
     unlockTaskId: "timed_run_25",
-    makeHead: () =>
-      circleCanvas((ctx, s) =>
-        drawRewardHead(ctx, s, "#d0c8e0", "#6a5a88", "#18141f", "rgba(200,190,230,0.55)")
-      ),
-    makeFood: () =>
-      circleCanvas((ctx, s) => drawRewardFood(ctx, s, "#c8bdd8", "#3a3048")),
+    makeHead: () => circleCanvas(drawWraithHead, { clipCircle: false }),
+    makeFood: () => circleCanvas(drawWraithFood),
   },
 };
 

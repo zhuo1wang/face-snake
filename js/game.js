@@ -387,22 +387,7 @@ export function createGame(canvas, options = {}) {
     ctx.fillStyle = `rgba(${bodyRgb}, 0.26)`;
     ctx.fill();
 
-    ctx.save();
-    ctx.rotate(angle);
-    if (headImg) {
-      ctx.beginPath();
-      ctx.arc(0, 0, r * 0.9, 0, Math.PI * 2);
-      ctx.clip();
-      const s = r * 1.8;
-      ctx.drawImage(headImg, -s / 2, -s / 2, s, s);
-    } else {
-      ctx.beginPath();
-      ctx.arc(0, 0, r * 0.88, 0, Math.PI * 2);
-      ctx.fillStyle = `rgb(${bodyRgb})`;
-      ctx.fill();
-    }
-    ctx.restore();
-
+    // 描边垫在头图下面，避免盖住角/帽檐等超出圆形的细节
     ctx.beginPath();
     ctx.arc(0, 0, r * 0.92, 0, Math.PI * 2);
     ctx.strokeStyle = `rgb(${bodyRgb})`;
@@ -413,6 +398,20 @@ export function createGame(canvas, options = {}) {
     ctx.strokeStyle = "rgba(255, 255, 255, 0.42)";
     ctx.lineWidth = Math.max(1, cell * 0.035);
     ctx.stroke();
+
+    ctx.save();
+    ctx.rotate(angle);
+    if (headImg) {
+      // 不裁成圆：终档角/帽等要伸出头外；透明底的圆形皮不受影响
+      const s = r * 2.15;
+      ctx.drawImage(headImg, -s / 2, -s / 2, s, s);
+    } else {
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 0.88, 0, Math.PI * 2);
+      ctx.fillStyle = `rgb(${bodyRgb})`;
+      ctx.fill();
+    }
+    ctx.restore();
 
     if (neck) {
       const nx = neck.x * cell + cell / 2 - cx;
